@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Dagger Sheet</title>
+  <meta name="description" content="Crie e gerencie fichas de personagem de RPG, mesmo offline.">
+
+  <!-- PWA: manifesto e cor da barra do sistema -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6d28d9">
+
+  <!-- iOS: ícone e modo "app" ao adicionar à tela inicial -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <header class="topo">
+    <a class="topo__marca" href="#/">Dagger Sheet</a>
+    <div class="topo__acoes">
+      <button id="btn-instalar" class="botao botao--pequeno botao--claro" hidden>Instalar</button>
+      <span id="status-rede" class="status">online</span>
+    </div>
+  </header>
+
+  <!-- As páginas são desenhadas aqui pelo router -->
+  <main id="app" class="conteudo" aria-live="polite"></main>
+
+  <noscript>Este app precisa de JavaScript ativado.</noscript>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

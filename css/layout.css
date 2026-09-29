@@ -1,0 +1,96 @@
+/* Layout: estrutura das telas (mobile-first) */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--espaco);
+  /* respeita o "notch" quando instalado no celular */
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: var(--cor-principal);
+  color: #fff;
+}
+
+.topo__marca {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.topo__acoes { display: flex; align-items: center; gap: 8px; }
+
+.conteudo {
+  flex: 1;
+  width: 100%;
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: var(--espaco);
+}
+
+/* Cada página é desenhada dentro de um .pagina (criado pelo router) */
+.pagina {
+  display: grid;
+  gap: var(--espaco);
+  align-content: start;
+}
+
+/* Página com barra inferior fixa (wizard): reserva espaço para ela */
+.pagina--com-barra {
+  padding-bottom: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom));
+}
+
+.cabecalho-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cabecalho-pagina h1 { margin: 0; font-size: 1.4rem; }
+
+/* Barra inferior fixa: Voltar / etapa / Continuar */
+.barra-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--altura-barra-inferior);
+  padding: 12px var(--espaco);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--borda);
+}
+.barra-inferior__etapa { text-align: center; font-size: 0.85rem; color: var(--texto-suave); }
+.barra-inferior__etapa strong { display: block; color: var(--texto); font-size: 1rem; }
+
+.grade-formulario {
+  display: grid;
+  gap: var(--espaco);
+}
+
+@media (min-width: 640px) {
+  .grade-formulario { grid-template-columns: 1fr 1fr; }
+  .grade-formulario .ocupa-tudo { grid-column: 1 / -1; }
+}
+
+/* Ficha de jogo: empilhada no celular, duas colunas no desktop (como a ficha em papel) */
+.ficha-grade,
+.coluna {
+  display: grid;
+  gap: var(--espaco);
+  align-content: start;
+}
+
+@media (min-width: 720px) {
+  .ficha-grade { grid-template-columns: minmax(220px, 1fr) 2fr; }
+  .ficha-grade .stats { grid-template-columns: 1fr; }
+}

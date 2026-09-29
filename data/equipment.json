@@ -1,0 +1,80 @@
+{
+  "weaponGroups": [
+    { "id": "corpo-forca", "name": "Corpo a corpo · Aprimoradas · Força", "attribute": "strength" },
+    { "id": "corpo-agilidade", "name": "Corpo a corpo · Aprimoradas · Agilidade", "attribute": "agility" },
+    { "id": "corpo-presenca", "name": "Corpo a corpo · Aprimoradas · Presença", "attribute": "presence" },
+    {
+      "id": "distancia-presenca",
+      "name": "À distância · Aprimoradas · Presença",
+      "attribute": "presence",
+      "note": "Desvantagem para atacar corpo a corpo."
+    },
+    {
+      "id": "distancia-agilidade",
+      "name": "À distância · Precisas · Agilidade",
+      "attribute": "agility",
+      "note": "Desvantagem para atacar corpo a corpo."
+    },
+    { "id": "magicas", "name": "Corpo a corpo e à distância · Mágicas · Presença", "attribute": "presence" }
+  ],
+
+  "weapons": [
+    { "id": "espada-curta", "name": "Espada curta", "group": "corpo-forca", "hands": 1, "damage": "d6", "range": "Corpo a corpo" },
+    { "id": "espada-longa", "name": "Espada longa", "group": "corpo-forca", "hands": 2, "damage": "d8", "range": "Corpo a corpo" },
+
+    { "id": "adaga", "name": "Adaga", "group": "corpo-agilidade", "hands": 1, "damage": "d4", "range": "Corpo a corpo" },
+    { "id": "falcione", "name": "Falcione", "group": "corpo-agilidade", "hands": 2, "damage": "d6", "range": "Corpo a corpo" },
+
+    { "id": "rapieira", "name": "Rapieira", "group": "corpo-presenca", "hands": 1, "damage": "d4", "range": "Corpo a corpo" },
+    { "id": "chicote", "name": "Chicote", "group": "corpo-presenca", "hands": 2, "damage": "d6", "range": "Corpo a corpo" },
+
+    { "id": "cetro-magico", "name": "Cetro mágico", "group": "distancia-presenca", "hands": 1, "damage": "d6", "range": "Longe" },
+    { "id": "besta-de-mao", "name": "Besta de mão", "group": "distancia-presenca", "hands": 1, "damage": "d6", "range": "Longe" },
+    { "id": "cajado-magico", "name": "Cajado mágico", "group": "distancia-presenca", "hands": 2, "damage": "d8", "range": "Muito longe" },
+    { "id": "arco-longo", "name": "Arco longo", "group": "distancia-presenca", "hands": 2, "damage": "d8", "range": "Muito longe" },
+
+    { "id": "disparador", "name": "Disparador", "group": "distancia-agilidade", "hands": 1, "damage": "d4", "direct": true, "range": "Longe" },
+    { "id": "besta-pesada", "name": "Besta pesada", "group": "distancia-agilidade", "hands": 2, "damage": "d6", "direct": true, "range": "Muito longe" },
+
+    {
+      "id": "athame", "name": "Athame", "group": "magicas", "hands": 1, "damage": "d6", "range": "Perto",
+      "requirement": { "attribute": "presence", "min": 1 }
+    },
+    {
+      "id": "totem", "name": "Totem", "group": "magicas", "hands": 2, "damage": "d8", "range": "Perto",
+      "requirement": { "attribute": "presence", "min": 2 }
+    }
+  ],
+
+  "shields": [
+    { "id": "escudo-madeira", "name": "Escudo simples de madeira", "rd": { "dice": 1, "sides": null }, "slots": 2 }
+  ],
+
+  "armors": [
+    {
+      "id": "armadura-leve", "name": "Armadura Leve",
+      "rd": { "dice": 1, "sides": null }, "penalty": 0, "penaltyAttributes": ["agility", "presence"], "slots": 5
+    },
+    {
+      "id": "armadura-media", "name": "Armadura Média",
+      "rd": { "dice": 1, "sides": 4 }, "penalty": 1, "penaltyAttributes": ["agility", "presence"], "slots": 5
+    },
+    {
+      "id": "armadura-pesada", "name": "Armadura Pesada",
+      "rd": { "dice": 1, "sides": 6 }, "penalty": 2, "penaltyAttributes": ["agility", "presence"], "slots": 5
+    }
+  ],
+
+  "armorMaterials": [
+    {
+      "id": "resistente", "name": "Resistente",
+      "description": "Dobra a RD (penalidade aumenta em 1).",
+      "rdMultiplier": 2, "penaltyDelta": 1
+    },
+    {
+      "id": "magica", "name": "Mágica",
+      "description": "O dano que passa é reduzido pela metade (RD diminui uma categoria).",
+      "rdCategoryDelta": -1, "halvesDamage": true
+    }
+  ]
+}

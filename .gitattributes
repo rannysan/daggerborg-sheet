@@ -1,0 +1,7 @@
+# Quebras de linha sempre LF no repositório (evita diffs falsos entre Windows/Linux/Mac)
+* text=auto eol=lf
+
+# Binários
+*.png binary
+*.jpg binary
+*.webp binary
