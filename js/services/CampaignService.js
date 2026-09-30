@@ -61,6 +61,11 @@ export class CampaignService {
     await this.#repository.update(id, { name: name.trim(), description: description.trim() });
   }
 
+  // Mestre abre/fecha o link de convite
+  setInviteOpen(id, open) {
+    return this.#repository.update(id, { inviteOpen: Boolean(open) });
+  }
+
   join(id) {
     return this.#repository.join(id, this.#profile.displayName);
   }

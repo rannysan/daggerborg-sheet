@@ -1,5 +1,5 @@
 // Campanhas no Firestore: campaigns/{id}
-//   { id, name, description, ownerId, memberIds: [uid], members: { uid: { name } }, createdAt }
+//   { id, name, description, ownerId, memberIds: [uid], members: { uid: { name } }, inviteOpen, createdAt }
 //
 // Ao contrário das fichas, estas operações esperam o servidor: entrar, sair ou
 // criar campanha só faz sentido com conexão, e o erro precisa aparecer na hora.
@@ -35,6 +35,7 @@ export class CampaignRepository {
       ownerId: uid,
       memberIds: [uid],
       members: { [uid]: { name: ownerName } },
+      inviteOpen: true,
       createdAt: new Date().toISOString(),
     };
     await fs.setDoc(ref, campaign);
@@ -53,9 +54,10 @@ export class CampaignRepository {
     return snapshot.exists() ? snapshot.data() : null;
   }
 
-  async update(id, { name, description }) {
+  // changes: { name, description } e/ou { inviteOpen }
+  async update(id, changes) {
     const { fs, col } = await this.#api();
-    await fs.updateDoc(fs.doc(col, id), { name, description });
+    await fs.updateDoc(fs.doc(col, id), changes);
   }
 
   async join(id, name) {

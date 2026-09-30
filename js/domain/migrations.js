@@ -76,20 +76,38 @@ export function migrate(raw) {
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-// Completa campos que faltarem com os valores padrão (inclui um nível de aninhamento,
-// ex.: um atributo novo dentro de "attributes") e descarta tipos errados
-// vindos de arquivos importados.
+// Tipo "primitivo" esperado: um texto no lugar de um número (ou vice-versa) é trocado
+// pelo padrão. null no padrão aceita qualquer texto (ex.: classId, campaignId).
+const sameKind = (value, fallback) =>
+  fallback === null ? value === null || typeof value === 'string' : typeof value === typeof fallback;
+
+// Uma experiência válida: { name: texto, bonus: inteiro }
+const isExperience = (e) => isPlainObject(e) && typeof e.name === 'string' && Number.isInteger(e.bonus);
+
+// Completa campos que faltarem com os valores padrão e troca os de tipo errado
+// (inclui um nível de aninhamento, ex.: attributes, hp). Protege contra fichas
+// malformadas vindas de arquivos importados ou de outros jogadores da campanha:
+// sem isso, um campo estranho poderia travar a ficha na tela de quem a abre.
 function withDefaults(character) {
   const defaults = createCharacter();
   const result = { ...defaults, ...character };
-  for (const [key, value] of Object.entries(defaults)) {
+
+  for (const [key, fallback] of Object.entries(defaults)) {
     const current = character[key];
-    if (isPlainObject(value)) {
-      result[key] = isPlainObject(current) ? { ...value, ...current } : value;
-    } else if (Array.isArray(value) && !Array.isArray(current)) {
-      result[key] = value;
+    if (isPlainObject(fallback)) {
+      const merged = isPlainObject(current) ? { ...fallback, ...current } : { ...fallback };
+      for (const [inner, innerFallback] of Object.entries(fallback)) {
+        if (!sameKind(merged[inner], innerFallback)) merged[inner] = innerFallback;
+      }
+      result[key] = merged;
+    } else if (Array.isArray(fallback)) {
+      if (!Array.isArray(current)) result[key] = fallback;
+    } else if (!sameKind(current, fallback)) {
+      result[key] = fallback;
     }
   }
+
+  if (!result.experiences.every(isExperience)) result.experiences = defaults.experiences;
   if (!isValidPortrait(result.portrait)) result.portrait = null;
   return result;
 }

@@ -7,6 +7,7 @@
 // mudança: com ele junto, cada clique em Vida mandaria ~50 KB para cada pessoa
 // assistindo em tempo real. As regras do Firestore controlam quem lê e edita.
 import { CharacterRepository } from './CharacterRepository.js';
+import { isValidPortrait } from '../../domain/character.js';
 
 const CHARACTERS = 'characters';
 const PORTRAITS = 'portraits';
@@ -48,7 +49,10 @@ export class FirestoreRepository extends CharacterRepository {
     const { db, fs } = await this.#api();
     try {
       const snapshot = await fs.getDoc(fs.doc(db, PORTRAITS, id));
-      const portrait = snapshot.exists() ? snapshot.data().portrait ?? null : null;
+      // Só imagem embutida: um retrato apontando para um site externo revelaria o
+      // IP de quem abre a campanha (as regras também barram, isto é a 2ª camada)
+      const raw = snapshot.exists() ? snapshot.data().portrait : null;
+      const portrait = isValidPortrait(raw) ? raw : null;
       this.#portraits.set(id, portrait);
       return portrait;
     } catch {
@@ -96,16 +100,30 @@ export class FirestoreRepository extends CharacterRepository {
   // Não espera o servidor: o Firestore aplica no cache local na hora e envia
   // quando puder (esperar travaria o app offline).
   async save(character) {
+    for (const write of await this.#write(character)) write.catch(this.#onError);
+    return character;
+  }
+
+  // Igual ao save, mas só termina quando o servidor CONFIRMA (lança erro se ele
+  // recusar). Para operações que não podem falhar em silêncio, como a migração.
+  async saveAndWait(character) {
+    await Promise.all(await this.#write(character));
+    return character;
+  }
+
+  // Dispara as gravações e devolve as promessas (ficha e, se mudou, retrato)
+  async #write(character) {
     const { db, fs } = await this.#api();
     const { portrait = null, ...data } = { ...character, ownerId: character.ownerId ?? this.#uid };
     const ref = fs.doc(db, CHARACTERS, data.id);
     const known = this.#synced.get(data.id);
+    const writes = [];
 
     if (!known) {
-      fs.setDoc(ref, data).catch(this.#onError);
+      writes.push(fs.setDoc(ref, data));
     } else {
       const changes = Object.fromEntries(Object.entries(data).filter(([key, value]) => !sameValue(value, known[key])));
-      if (Object.keys(changes).length) fs.updateDoc(ref, changes).catch(this.#onError);
+      if (Object.keys(changes).length) writes.push(fs.updateDoc(ref, changes));
     }
     this.#synced.set(data.id, data);
 
@@ -114,13 +132,13 @@ export class FirestoreRepository extends CharacterRepository {
     const campaignChanged = known && known.campaignId !== data.campaignId;
     const portraitRef = fs.doc(db, PORTRAITS, data.id);
     if (portrait && (portraitChanged || campaignChanged)) {
-      fs.setDoc(portraitRef, { ownerId: data.ownerId, campaignId: data.campaignId ?? null, portrait }).catch(this.#onError);
+      writes.push(fs.setDoc(portraitRef, { ownerId: data.ownerId, campaignId: data.campaignId ?? null, portrait }));
     } else if (!portrait && portraitChanged) {
-      fs.deleteDoc(portraitRef).catch(this.#onError);
+      writes.push(fs.deleteDoc(portraitRef));
     }
     this.#portraits.set(data.id, portrait);
 
-    return character;
+    return writes;
   }
 
   async remove(id) {

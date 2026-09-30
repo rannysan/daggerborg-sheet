@@ -2,41 +2,101 @@ rules_version = '2';
 
 // Regras do Firestore do Dagger Sheet.
 // Cole no console: Firebase → Firestore Database → Regras → Publicar.
+//
+// Além de quem pode ler/editar, as regras validam formato e tamanho dos dados:
+// o app é aberto (qualquer conta Google entra), então não dá para confiar no
+// que chega — um usuário mal-intencionado pode chamar a API direto, sem o app.
 service cloud.firestore {
   match /databases/{db}/documents {
 
     function signedIn() { return request.auth != null; }
     function me() { return request.auth.uid; }
 
+    // Texto com limite de tamanho
+    function str(value, max) { return value is string && value.size() <= max; }
+
+    // ---------- Campanhas (auxiliares) ----------
     function campaignPath(id) { return /databases/$(db)/documents/campaigns/$(id); }
+    function campaign(id) { return get(campaignPath(id)).data; }
     function isMember(id) {
-      return id != null && exists(campaignPath(id)) && me() in get(campaignPath(id)).data.memberIds;
+      return id != null && exists(campaignPath(id)) && me() in campaign(id).memberIds;
     }
     function isMasterOf(id) {
-      return id != null && exists(campaignPath(id)) && get(campaignPath(id)).data.ownerId == me();
+      return id != null && exists(campaignPath(id)) && campaign(id).ownerId == me();
     }
 
-    // Ler ficha: dono, ou quem participa da campanha dela.
-    // Documento inexistente (resource == null) pode ser "lido": a resposta é só
-    // "não existe". Sem isso, ler uma ficha recém-criada antes de o servidor
-    // gravá-la (ou um retrato que não existe) dava erro de permissão.
+    // ---------- Fichas (auxiliares) ----------
+    // Campos que fichas antigas podem não ter são lidos com um padrão: acessar um
+    // campo inexistente dá erro nas regras (e recusaria a gravação).
+    function ownerOf(data) { return data.get('ownerId', null); }
+    function campaignOf(data) { return data.get('campaignId', null); }
+
+    // Ler: dono, ou quem participa da campanha da ficha. Documento inexistente
+    // (res == null) pode ser "lido": a resposta é só "não existe".
     function canRead(res) {
-      return res == null || res.data.ownerId == me() || isMember(res.data.campaignId);
+      return res == null || ownerOf(res.data) == me() || isMember(campaignOf(res.data));
     }
 
-    // Editar ficha: o dono não muda. O dono pode vincular (a uma campanha em que
-    // está) e desvincular; o Mestre da campanha edita e pode desvincular.
+    // O Mestre edita fichas da campanha, mas só de quem AINDA participa dela
+    // (se a pessoa saiu e a desvinculação falhou, o Mestre perde o acesso).
+    function masterCanEdit(data) {
+      return isMasterOf(campaignOf(data)) && ownerOf(data) in campaign(campaignOf(data)).memberIds;
+    }
+
+    // Editar: o dono não muda. O dono pode vincular (a uma campanha em que está)
+    // e desvincular; o Mestre edita e pode desvincular (não mover para outra).
     function canUpdate(before, after) {
-      return after.ownerId == before.ownerId && (
-        (before.ownerId == me() && (after.campaignId == null || isMember(after.campaignId)))
-        || (isMasterOf(before.campaignId)
-            && (after.campaignId == before.campaignId || after.campaignId == null))
+      return ownerOf(after) == ownerOf(before) && (
+        (ownerOf(before) == me() && (campaignOf(after) == null || isMember(campaignOf(after))))
+        || (masterCanEdit(before)
+            && (campaignOf(after) == campaignOf(before) || campaignOf(after) == null))
       );
+    }
+
+    // Formato mínimo de uma ficha (o app também corrige tipos ao ler)
+    function validCharacter(d) {
+      return d.keys().size() <= 40
+        && !('portrait' in d)                       // retrato fica em portraits/{id}
+        && str(d.get('name', ''), 100)
+        && str(d.get('player', ''), 100)
+        && str(d.get('pronouns', ''), 100)
+        && str(d.get('other', ''), 5000)
+        && d.get('attributes', {}) is map
+        && d.get('hp', {}) is map
+        && d.get('stress', {}) is map
+        && d.get('experiences', []) is list
+        && d.get('experiences', []).size() <= 5;
+    }
+
+    // Retrato: só imagem embutida e pequena. Um link externo revelaria o IP de
+    // quem abre a campanha para o dono do link.
+    function validPortrait(d) {
+      return d.keys().hasOnly(['ownerId', 'campaignId', 'portrait'])
+        && d.portrait is string
+        && d.portrait.size() <= 300000
+        && d.portrait.matches('data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+');
+    }
+
+    // ---------- Campanhas: formato ----------
+    function validMember(m) { return m is map && m.keys().hasOnly(['name']) && str(m.name, 60); }
+    function validCampaign(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && str(d.get('description', ''), 500)
+        && d.memberIds is list && d.memberIds.size() <= 50
+        && d.members is map
+        && d.get('inviteOpen', true) is bool;
+    }
+    // A pessoa está se adicionando agora (entrando pelo convite)
+    function joining() {
+      return me() in request.resource.data.memberIds && !(me() in resource.data.memberIds);
     }
 
     // ---------- Perfil (apelido) ----------
     match /users/{uid} {
-      allow read, write: if signedIn() && me() == uid;
+      allow read, delete: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['nickname'])
+        && str(request.resource.data.nickname, 30);
 
       // Caminho antigo das fichas: só para a migração automática (ler e apagar)
       match /characters/{id} {
@@ -51,19 +111,27 @@ service cloud.firestore {
       allow list: if signedIn() && me() in resource.data.memberIds;
 
       allow create: if signedIn()
+        && validCampaign(request.resource.data)
+        && request.resource.data.id == id
         && request.resource.data.ownerId == me()
         && request.resource.data.memberIds == [me()]
-        && request.resource.data.members.keys().hasOnly([me()]);
+        && request.resource.data.members.keys().hasOnly([me()])
+        && validMember(request.resource.data.members[me()]);
 
-      allow update: if signedIn() && (
-        // Mestre: edita tudo, menos quem é o dono
-        (resource.data.ownerId == me() && request.resource.data.ownerId == resource.data.ownerId)
+      allow update: if signedIn() && validCampaign(request.resource.data) && (
+        // Mestre: edita tudo, menos o id e quem é o dono
+        (resource.data.ownerId == me()
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.id == resource.data.id)
         // Membro: só entra, sai ou troca o próprio nome na lista
         || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members'])
             && request.resource.data.memberIds.toSet().difference(resource.data.memberIds.toSet())
                  .union(resource.data.memberIds.toSet().difference(request.resource.data.memberIds.toSet()))
                  .hasOnly([me()])
-            && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()]))
+            && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()])
+            && (!(me() in request.resource.data.members) || validMember(request.resource.data.members[me()]))
+            // Convites fechados pelo Mestre: ninguém novo entra (sair continua liberado)
+            && (!joining() || resource.data.get('inviteOpen', true) == true))
       );
 
       allow delete: if signedIn() && resource.data.ownerId == me();
@@ -73,13 +141,15 @@ service cloud.firestore {
     match /characters/{id} {
       allow read: if signedIn() && canRead(resource);
       allow create: if signedIn()
+        && validCharacter(request.resource.data)
         && request.resource.data.id == id
-        && request.resource.data.ownerId == me()
-        && (request.resource.data.campaignId == null || isMember(request.resource.data.campaignId));
+        && ownerOf(request.resource.data) == me()
+        && (campaignOf(request.resource.data) == null || isMember(campaignOf(request.resource.data)));
       allow update: if signedIn()
+        && validCharacter(request.resource.data)
         && request.resource.data.id == id
         && canUpdate(resource.data, request.resource.data);
-      allow delete: if signedIn() && resource.data.ownerId == me();
+      allow delete: if signedIn() && ownerOf(resource.data) == me();
     }
 
     // ---------- Retratos (separados da ficha para economizar dados no tempo real) ----------
@@ -89,12 +159,13 @@ service cloud.firestore {
 
       allow read: if signedIn() && canRead(resource);
       allow create, update: if signedIn()
+        && validPortrait(request.resource.data)
         && exists(/databases/$(db)/documents/characters/$(id))
-        && (character().ownerId == me() || isMasterOf(character().campaignId))
-        && request.resource.data.ownerId == character().ownerId
-        && request.resource.data.campaignId == character().campaignId;
+        && (ownerOf(character()) == me() || masterCanEdit(character()))
+        && request.resource.data.ownerId == ownerOf(character())
+        && request.resource.data.campaignId == campaignOf(character());
       allow delete: if signedIn()
-        && (resource.data.ownerId == me() || isMasterOf(resource.data.campaignId));
+        && (resource.data.ownerId == me() || masterCanEdit(resource.data));
     }
   }
 }

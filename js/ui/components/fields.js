@@ -30,10 +30,10 @@ export function textField({ label, hint, error, value = '', placeholder = '', on
   return wrap(id, { label, hint, error }, input);
 }
 
-export function textAreaField({ label, hint, error, value = '', placeholder = '', onInput, rows = 4 }) {
+export function textAreaField({ label, hint, error, value = '', placeholder = '', onInput, rows = 4, maxLength = 5000 }) {
   const id = nextId();
   const textarea = h('textarea', {
-    id, value, placeholder, rows,
+    id, value, placeholder, rows, maxLength,
     oninput: (e) => onInput(e.target.value),
   });
   return wrap(id, { label, hint, error }, textarea);

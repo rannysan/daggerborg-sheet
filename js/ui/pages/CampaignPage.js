@@ -6,7 +6,7 @@ import { openDialog } from '../components/dialog.js';
 import { openCampaignDialog } from '../components/campaignDialog.js';
 import { selectField } from '../components/fields.js';
 import { portrait } from '../components/portrait.js';
-import { isMaster, isMember, memberName } from '../../domain/campaign.js';
+import { invitesOpen, isMaster, isMember, memberName } from '../../domain/campaign.js';
 import { findClass } from '../../domain/classes.js';
 import { HOPE_MAX } from '../../domain/rules.js';
 
@@ -112,7 +112,9 @@ export class CampaignPage {
         ),
         h('div', { class: 'grupo-botoes' },
           h('a', { class: 'botao botao--secundario', href: '#/campanhas' }, '← Campanhas'),
-          h('button', { class: 'botao', type: 'button', onclick: () => this.#share() }, 'Copiar convite'),
+          invitesOpen(c)
+            ? h('button', { class: 'botao', type: 'button', onclick: () => this.#share() }, 'Copiar convite')
+            : h('span', { class: 'selo selo--aviso' }, 'Convites fechados'),
         ),
       ),
       c.description ? h('p', { class: 'campanha__descricao' }, c.description) : null,
@@ -130,6 +132,12 @@ export class CampaignPage {
           this.#master
             ? [
                 h('button', { class: 'botao botao--pequeno botao--secundario', type: 'button', onclick: () => this.#edit() }, 'Editar campanha'),
+                h('button', {
+                  class: 'botao botao--pequeno botao--secundario',
+                  type: 'button',
+                  title: invitesOpen(c) ? 'O link de convite para de aceitar gente nova' : 'O link de convite volta a funcionar',
+                  onclick: () => this.#toggleInvites(),
+                }, invitesOpen(c) ? 'Fechar convites' : 'Abrir convites'),
                 h('button', { class: 'botao botao--pequeno botao--perigo', type: 'button', onclick: () => this.#delete() }, 'Excluir campanha'),
               ]
             : h('button', { class: 'botao botao--pequeno botao--perigo', type: 'button', onclick: () => this.#leave() }, 'Sair da campanha'),
@@ -275,6 +283,17 @@ export class CampaignPage {
         showToast('Campanha atualizada.');
       },
     });
+  }
+
+  async #toggleInvites() {
+    const open = !invitesOpen(this.#campaign);
+    try {
+      await this.#campaigns.setInviteOpen(this.#campaign.id, open);
+      showToast(open ? 'Convites abertos: o link volta a funcionar.' : 'Convites fechados: o link não aceita mais ninguém.');
+    } catch (erro) {
+      console.error('[Campanha]', erro);
+      showToast('Não foi possível alterar os convites.');
+    }
   }
 
   #removeMember(uid) {

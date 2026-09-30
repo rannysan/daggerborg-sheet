@@ -2,7 +2,7 @@
 import { h } from '../dom.js';
 import { openDialog } from './dialog.js';
 import { textField, textAreaField } from './fields.js';
-import { CAMPAIGN_NAME_MAX, validateCampaign } from '../../domain/campaign.js';
+import { CAMPAIGN_DESCRIPTION_MAX, CAMPAIGN_NAME_MAX, validateCampaign } from '../../domain/campaign.js';
 import { hasErrors } from '../../domain/validation.js';
 
 /**
@@ -27,6 +27,7 @@ export function openCampaignDialog({ title, confirmLabel, initial = { name: '', 
         label: 'Descrição (opcional)',
         value: values.description,
         rows: 3,
+        maxLength: CAMPAIGN_DESCRIPTION_MAX,
         error: errors.description,
         onInput: (v) => { values.description = v; },
       }),

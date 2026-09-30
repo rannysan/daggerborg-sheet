@@ -3,6 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- Segurança (CSP): o navegador só carrega scripts deste site e do Firebase
+       (gstatic/apis.google.com) e só conversa com os serviços do Google. Se um dia
+       surgir uma falha de XSS, script de outro site não roda nem envia dados.
+       Ao adicionar um serviço externo, libere o domínio aqui. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://www.gstatic.com https://apis.google.com;
+    connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com;
+    frame-src https://daggerborg-sheets.firebaseapp.com https://accounts.google.com;
+    img-src 'self' data: blob:;
+    style-src 'self';
+    font-src 'self';
+    manifest-src 'self';
+    worker-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Dagger Sheet</title>
   <meta name="description" content="Crie e gerencie fichas de personagem de RPG, mesmo offline.">
 

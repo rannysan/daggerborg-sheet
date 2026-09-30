@@ -1,6 +1,6 @@
 // Regras de campanha e de permissão. Funções puras.
 //
-// Campanha: { id, name, description, ownerId, memberIds: [uid], members: { uid: { name } } }
+// Campanha: { id, name, description, ownerId, memberIds: [uid], members: { uid: { name } }, inviteOpen }
 // O dono (ownerId) é o Mestre. Cada ficha pertence a no máximo uma campanha.
 
 export const CAMPAIGN_NAME_MAX = 60;
@@ -8,6 +8,10 @@ export const CAMPAIGN_DESCRIPTION_MAX = 500;
 
 export const isMaster = (campaign, uid) => Boolean(campaign && uid && campaign.ownerId === uid);
 export const isMember = (campaign, uid) => Boolean(campaign && uid && campaign.memberIds?.includes(uid));
+
+// O Mestre pode fechar os convites: o link para de aceitar gente nova
+// (quem já está continua). Campanhas antigas, sem o campo, ficam abertas.
+export const invitesOpen = (campaign) => campaign?.inviteOpen !== false;
 
 export function memberName(campaign, uid) {
   return campaign?.members?.[uid]?.name || 'Jogador';

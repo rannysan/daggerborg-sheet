@@ -18,7 +18,8 @@ export function newId() {
 // Retrato: só imagem embutida (data URL). Recusa links externos vindos de
 // arquivos importados (evita carregar/rastrear endereços de terceiros).
 const PORTRAIT_PATTERN = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
-const PORTRAIT_MAX_LENGTH = 2 * 1024 * 1024;
+// O app gera ~30-50 KB; o limite folgado barra abusos (mesmo valor nas regras do Firestore)
+export const PORTRAIT_MAX_LENGTH = 300000;
 
 export function isValidPortrait(value) {
   return typeof value === 'string' && value.length <= PORTRAIT_MAX_LENGTH && PORTRAIT_PATTERN.test(value);

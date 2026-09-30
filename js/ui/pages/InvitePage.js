@@ -1,7 +1,7 @@
 // Convite: #/entrar/:id — quem tem o link e está logado pode entrar na campanha
 import { h, showToast } from '../dom.js';
 import { emptyState } from '../components/emptyState.js';
-import { isMember, memberName } from '../../domain/campaign.js';
+import { invitesOpen, isMember, memberName } from '../../domain/campaign.js';
 
 export class InvitePage {
   #campaigns;
@@ -34,6 +34,11 @@ export class InvitePage {
     }
     if (isMember(campaign, this.#campaigns.uid)) {
       this.#router.navigate(`/campanha/${id}`, { replace: true });
+      return;
+    }
+
+    if (!invitesOpen(campaign)) {
+      outlet.append(emptyState(`Os convites de "${campaign.name}" estão fechados. Peça ao Mestre para abri-los.`, { href: '#/campanhas', label: 'Ver minhas campanhas' }));
       return;
     }
 
