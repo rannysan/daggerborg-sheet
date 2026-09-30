@@ -8,10 +8,16 @@ export const ATTRIBUTES = Object.freeze([
   { id: 'vigor', label: 'Vigor', hint: 'Suportar Toxinas, Frio, Calor e Queda' },
 ]);
 
-// Todos os atributos começam em -3; o jogador distribui 13 pontos (máximo +3)
+// Todos os atributos começam em -3; o jogador distribui 13 pontos.
+// Cada atributo vai até +3, e UM único atributo pode chegar a +4.
 export const ATTRIBUTE_MIN = -3;
 export const ATTRIBUTE_MAX = 3;
+export const ATTRIBUTE_PEAK = 4;       // valor excepcional
+export const ATTRIBUTE_PEAK_COUNT = 1; // quantos atributos podem passar de ATTRIBUTE_MAX
 export const ATTRIBUTE_POINTS = 13;
+
+// Rolagem de dualidade (2d12 + atributo): precisa deste total ou mais
+export const DUALITY_TARGET = 13;
 
 // Custos das habilidades de classe
 export const COSTS = Object.freeze({
@@ -66,6 +72,17 @@ export function attributePointsSpent(attributes) {
 
 export function attributePointsLeft(attributes) {
   return ATTRIBUTE_POINTS - attributePointsSpent(attributes);
+}
+
+// Quantos atributos passaram de +3
+export function attributesAbovePeakLimit(attributes) {
+  return ATTRIBUTES.filter(({ id }) => (attributes[id] ?? ATTRIBUTE_MIN) > ATTRIBUTE_MAX).length;
+}
+
+// Maior valor que ESTE atributo pode ter agora: +4 se nenhum outro já passou de +3
+export function attributeCap(attributes, id) {
+  const others = attributesAbovePeakLimit({ ...attributes, [id]: ATTRIBUTE_MIN });
+  return others < ATTRIBUTE_PEAK_COUNT ? ATTRIBUTE_PEAK : ATTRIBUTE_MAX;
 }
 
 export function isValidPoolMax(max) {

@@ -61,3 +61,35 @@ export function describeRoll(result) {
   const base = result.critical ? `Crítico: ${result.bonus} (máximo) + ${dice}` : dice;
   return `${base}${mod} = ${result.total}`;
 }
+
+// ---------- Dualidade: 2d12 (um de Esperança, um de Medo) + modificador ----------
+export const DUALITY_SIDES = 12;
+
+// target: total mínimo para sucesso (regra do sistema: 13)
+export function rollDuality(modifier, { target, random = cryptoRandomInt } = {}) {
+  const hope = random(DUALITY_SIDES);
+  const fear = random(DUALITY_SIDES);
+  const total = hope + fear + modifier;
+  const critical = hope === fear; // dados iguais: Sucesso Crítico, seja qual for o total
+  const success = critical || total >= target;
+  const withHope = hope > fear;
+  return {
+    hope, fear, modifier, total, target, critical, success, withHope,
+    outcome: critical ? 'critical' : `${success ? 'success' : 'failure'}-${withHope ? 'hope' : 'fear'}`,
+  };
+}
+
+// Ex.: "Esperança 8 + Medo 5 + 2 = 15 (precisa de 13)"
+// Com Vantagem e Experiência: "Esperança 8 + Medo 5 + 2 + Vantagem 4 (d6: 4, 1) + Caçador 1 = 20 (precisa de 13)"
+export function describeDuality(result) {
+  const signed = (n) => ` ${n >= 0 ? '+' : '−'} ${Math.abs(n)}`;
+  const parts = [`Esperança ${result.hope} + Medo ${result.fear}`];
+  if (result.modifier) parts.push(signed(result.modifier));
+  if (result.edge) {
+    const name = result.edge.value > 0 ? 'Vantagem' : 'Desvantagem';
+    const dice = result.edge.rolls.length > 1 ? ` (d6: ${result.edge.rolls.join(', ')})` : '';
+    parts.push(`${result.edge.value > 0 ? ' +' : ' −'} ${name} ${Math.abs(result.edge.value)}${dice}`);
+  }
+  for (const e of result.experiences ?? []) parts.push(` + ${e.name} ${e.bonus}`);
+  return `${parts.join('')} = ${result.total} (precisa de ${result.target})`;
+}

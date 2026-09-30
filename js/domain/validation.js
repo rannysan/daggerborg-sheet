@@ -1,8 +1,8 @@
 // Validações por etapa. Cada função devolve um objeto { campo: 'mensagem' };
 // objeto vazio significa que está tudo certo.
 import {
-  ATTRIBUTES, ATTRIBUTE_MIN, ATTRIBUTE_MAX, ATTRIBUTE_POINTS, POOL_MAX_LIMIT,
-  attributePointsLeft, formatRequirement, isValidPoolMax,
+  ATTRIBUTES, ATTRIBUTE_MIN, ATTRIBUTE_MAX, ATTRIBUTE_PEAK, ATTRIBUTE_PEAK_COUNT, ATTRIBUTE_POINTS,
+  POOL_MAX_LIMIT, attributePointsLeft, attributesAbovePeakLimit, formatRequirement, isValidPoolMax,
 } from './rules.js';
 import { findClass, meetsRequirement, requirementLabel } from './classes.js';
 import { canUseWeapon, findWeapon } from './equipment.js';
@@ -19,9 +19,13 @@ export function validateAttributes(character) {
   const errors = {};
   for (const { id } of ATTRIBUTES) {
     const value = character.attributes[id];
-    if (!Number.isInteger(value) || value < ATTRIBUTE_MIN || value > ATTRIBUTE_MAX) {
-      errors[id] = `Use um valor entre ${ATTRIBUTE_MIN} e +${ATTRIBUTE_MAX}.`;
+    if (!Number.isInteger(value) || value < ATTRIBUTE_MIN || value > ATTRIBUTE_PEAK) {
+      errors[id] = `Use um valor entre ${ATTRIBUTE_MIN} e +${ATTRIBUTE_PEAK}.`;
     }
+  }
+
+  if (attributesAbovePeakLimit(character.attributes) > ATTRIBUTE_PEAK_COUNT) {
+    errors.peak = `Só ${ATTRIBUTE_PEAK_COUNT === 1 ? 'um atributo pode' : `${ATTRIBUTE_PEAK_COUNT} atributos podem`} passar de +${ATTRIBUTE_MAX}.`;
   }
 
   const left = attributePointsLeft(character.attributes);

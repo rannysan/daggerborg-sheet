@@ -492,3 +492,41 @@
   cursor: pointer;
 }
 .pendencias--ok { border-color: var(--cor-principal); }
+
+/* ---------- Teste de atributo (dualidade) ---------- */
+.stat__acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px; }
+.dado-rotulado { display: inline-grid; justify-items: center; gap: 2px; }
+.dado-rotulado__legenda { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--texto-suave); }
+.dado--esperanca { background: #d97706; }        /* dourado: Esperança */
+.dado--medo { background: #4c1d95; }             /* roxo escuro: Medo */
+.rolagem--esperanca { border-color: #d97706; }
+.rolagem--medo { border-color: #6d28d9; }
+.rolagem--falha .rolagem__total { color: var(--texto-suave); }
+
+.rolagem__mensagem { display: grid; gap: 2px; font-size: 0.9rem; }
+.rolagem__mensagem strong { font-size: 1rem; }
+.rolagem__mensagem small { color: var(--texto-suave); font-size: 0.75rem; }
+.rolagem--critico .rolagem__mensagem strong { color: #d97706; }
+.rolagem__acoes { margin-top: 2px; }
+
+/* ---------- Descanso curto: lista de movimentos ---------- */
+.movimentos { display: grid; gap: 8px; }
+.movimentos .contador {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  justify-items: start;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.movimentos .contador__rotulo { text-transform: none; font-size: 0.9rem; color: var(--texto); font-weight: 600; }
+.movimentos .contador__valor { font-size: 1.1rem; min-width: 2ch; }
+.movimentos .contador__botao { width: 36px; height: 36px; font-size: 1.1rem; }
+.dado--vantagem { background: #15803d; }         /* verde: Vantagem (+) */
+.dado--desvantagem { background: var(--cor-perigo); } /* vermelho: Desvantagem (−) */
+
+/* ---------- Opções do teste (Experiências, Vantagem/Desvantagem) ---------- */
+.opcoes-teste { display: grid; gap: 8px; }
+.opcoes-teste + .opcoes-teste { padding-top: 12px; border-top: 1px solid var(--borda); }
+.opcoes-teste .rotulo { margin: 0; }

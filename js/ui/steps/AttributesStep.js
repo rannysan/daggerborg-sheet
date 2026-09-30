@@ -1,7 +1,8 @@
 import { h, append } from '../dom.js';
 import { counter } from '../components/counter.js';
 import {
-  ATTRIBUTES, ATTRIBUTE_MIN, ATTRIBUTE_MAX, ATTRIBUTE_POINTS, attributePointsLeft,
+  ATTRIBUTES, ATTRIBUTE_MIN, ATTRIBUTE_MAX, ATTRIBUTE_PEAK, ATTRIBUTE_POINTS,
+  attributeCap, attributePointsLeft,
 } from '../../domain/rules.js';
 import { validateAttributes } from '../../domain/validation.js';
 import { formatModifier } from '../../core/utils.js';
@@ -21,9 +22,10 @@ export const AttributesStep = {
       hint: attr.hint,
       value: attributes[attr.id],
       min: ATTRIBUTE_MIN,
-      max: ATTRIBUTE_MAX,
+      max: ATTRIBUTE_PEAK,
       format: formatModifier,
-      canIncrease: () => attributePointsLeft(attributes) > 0,
+      // Precisa ter ponto sobrando e não passar do teto: +3, ou +4 se for o único
+      canIncrease: () => attributePointsLeft(attributes) > 0 && attributes[attr.id] < attributeCap(attributes, attr.id),
       onChange: (value) => {
         attributes = { ...attributes, [attr.id]: value };
         update({ attributes });
@@ -38,12 +40,12 @@ export const AttributesStep = {
       counters.forEach((c) => c.refresh());
     }
 
-    const errorMessage = errors.points ?? ATTRIBUTES.map((a) => errors[a.id]).find(Boolean);
+    const errorMessage = errors.points ?? errors.peak ?? ATTRIBUTES.map((a) => errors[a.id]).find(Boolean);
 
     refreshAll();
     append(container,
       h('h2', {}, 'Atributos'),
-      h('p', {}, `Todos começam em ${ATTRIBUTE_MIN}. Distribua ${ATTRIBUTE_POINTS} pontos; cada atributo vai no máximo a +${ATTRIBUTE_MAX}.`),
+      h('p', {}, `Todos começam em ${ATTRIBUTE_MIN}. Distribua ${ATTRIBUTE_POINTS} pontos. Cada atributo vai até +${ATTRIBUTE_MAX}, e só um deles pode chegar a +${ATTRIBUTE_PEAK}.`),
       pointsEl,
       errorMessage ? h('p', { class: 'campo__erro', role: 'alert' }, errorMessage) : null,
       h('div', { class: 'contadores' }, counters.map((c) => c.element)),

@@ -7,12 +7,17 @@ import { emptyState } from '../components/emptyState.js';
 import { poolCounter } from '../components/counter.js';
 import { pipTrack } from '../components/pipTrack.js';
 import { textBlock } from '../components/textBlock.js';
-import { selectField } from '../components/fields.js';
 import { openDialog } from '../components/dialog.js';
 import { classAbilities } from '../components/classAbilities.js';
 import { portrait, portraitButton } from '../components/portrait.js';
-import { showRoll } from '../components/rollPopup.js';
+import { showDualityRoll, showRoll } from '../components/rollPopup.js';
+import { counter } from '../components/counter.js';
+import { checkboxField } from '../components/fields.js';
 import { rollCritical, rollDice } from '../../domain/dice.js';
+import {
+  DUALITY_OUTCOMES, EDGE_MAX_SOURCES, EXPERIENCE_HOPE_COST, REACTION_NOTE, addExperience,
+  applyDualityEffect, attributeTestModifier, effectChangesCharacter, rollAttributeTest,
+} from '../../domain/duality.js';
 import { EditSession } from '../../services/EditSession.js';
 import { ATTRIBUTES, HOPE_MAX, HOPE_START } from '../../domain/rules.js';
 import {
@@ -21,7 +26,7 @@ import {
 } from '../../domain/rest.js';
 import { findClass, armorPenaltyReduction } from '../../domain/classes.js';
 import {
-  armorProfile, armorSummary, findArmor, findMaterial, findShield, findWeapon,
+  armorProfile, armorSummary, findArmor, findMaterial, findShield, findWeapon, formatRd,
   shieldSummary, weaponSummary,
 } from '../../domain/equipment.js';
 import { normalizeCharacter } from '../../domain/normalize.js';
@@ -175,9 +180,124 @@ export class SheetPage {
           penaltyFor(attr.id)
             ? h('span', { class: 'stat__penalidade' }, `${formatModifier(-penaltyFor(attr.id))} pela armadura`)
             : null,
+          h('div', { class: 'stat__acoes' },
+            // Um botão só: abre as opções (Experiências, Vantagem/Desvantagem) e rola
+            h('button', {
+              class: 'botao botao--pequeno',
+              type: 'button',
+              'aria-label': `Rolar teste de ${attr.label}`,
+              onclick: () => this.#openRollOptions(attr, penaltyFor(attr.id)),
+            }, '🎲 Rolar'),
+          ),
         )),
       ),
     );
+  }
+
+  // Antes de rolar: Experiências (1 Esperança cada) e fontes de Vantagem/Desvantagem
+  #openRollOptions(attr, penalty) {
+    const c = this.#session.character;
+    const edge = { advantage: 0, disadvantage: c.vulnerable ? 1 : 0 };
+    const experiences = c.experiences.filter((e) => e.name.trim());
+    const chosen = new Set(); // índices das experiências marcadas
+
+    const pick = (key, label) => counter({
+      label,
+      value: edge[key],
+      min: 0,
+      max: EDGE_MAX_SOURCES,
+      onChange: (value) => { edge[key] = value; },
+    }).element;
+
+    // Usar Experiência gasta Esperança: só quem pode editar a ficha
+    const experienceSection = this.#readOnly || !experiences.length ? null : h('div', { class: 'opcoes-teste' },
+      h('h3', { class: 'rotulo' }, `Experiências (${EXPERIENCE_HOPE_COST} Esperança cada · você tem ${c.hope})`),
+      experiences.map((experience, i) => checkboxField({
+        label: `${experience.name} (${formatModifier(experience.bonus)})`,
+        onChange: (checked) => (checked ? chosen.add(i) : chosen.delete(i)),
+      })),
+    );
+
+    openDialog({
+      title: `Teste de ${attr.label}`,
+      confirmLabel: '🎲 Rolar',
+      focusConfirm: true, // rolagem simples: clicar em Rolar e apertar Enter
+      content: [
+        experienceSection,
+        h('div', { class: 'opcoes-teste' },
+          h('h3', { class: 'rotulo' }, 'Vantagem e Desvantagem'),
+          h('p', { class: 'campo__dica' }, 'Cada fonte é 1d6 somado (Vantagem) ou subtraído (Desvantagem). '
+            + 'Com várias, vale só o maior dado; Vantagens e Desvantagens se compensam.'),
+          c.vulnerable
+            ? h('p', { class: 'campo__dica' }, 'Você está Vulnerável: ataques e defesas já vêm com 1 Desvantagem.')
+            : null,
+          h('div', { class: 'contadores' }, pick('advantage', 'Vantagem (+d6)'), pick('disadvantage', 'Desvantagem (−d6)')),
+        ),
+      ],
+      onConfirm: () => {
+        const used = [...chosen].sort().map((i) => experiences[i]);
+        const cost = used.length * EXPERIENCE_HOPE_COST;
+        if (cost > this.#session.character.hope) {
+          showToast(`Esperança insuficiente: precisa de ${cost}, você tem ${this.#session.character.hope}.`);
+          return false; // mantém o diálogo aberto para desmarcar
+        }
+        if (cost) {
+          this.#update((s) => ({ hope: s.hope - cost }));
+          this.#render();
+        }
+        this.#rollAttribute(attr, penalty, { edge, experiences: used });
+        return true;
+      },
+    });
+  }
+
+  // Teste de atributo: dualidade (Esperança x Medo) + atributo − penalidade da armadura,
+  // com Experiências (já pagas) e Vantagem/Desvantagem opcionais. O efeito do resultado
+  // (ganhar Esperança, crítico) vem como botão: numa Reação ele não se aplica.
+  #rollAttribute(attr, penalty, { edge = {}, experiences = [] } = {}) {
+    const c = this.#session.character;
+    let result = rollAttributeTest(attributeTestModifier(c, attr.id, penalty), edge);
+    for (const experience of experiences) result = addExperience(result, experience);
+
+    const messageFor = (r) => {
+      const outcome = DUALITY_OUTCOMES[r.outcome];
+      const notes = [];
+      if (c.vulnerable && !edge.disadvantage) notes.push('Você está Vulnerável: ataques e defesas têm Desvantagem (marque ao rolar).');
+      if (attr.id === 'agility') notes.push(REACTION_NOTE);
+      return { title: outcome.title, text: outcome.text, note: notes.join(' ') || null };
+    };
+
+    const actions = [];
+    const outcome = DUALITY_OUTCOMES[result.outcome];
+    if (!this.#readOnly && outcome.effect) {
+      actions.push({
+        label: result.critical ? 'Aplicar o crítico na ficha' : 'Ganhar 1 Esperança',
+        onClick: () => {
+          const current = this.#session.character;
+          if (!effectChangesCharacter(current, outcome.effect)) {
+            showToast('Nada a aplicar: Esperança no máximo e nada para curar.');
+            return false;
+          }
+          this.#update((s) => applyDualityEffect(s, outcome.effect));
+          this.#render();
+          return true;
+        },
+      });
+    }
+
+    const base = c.attributes[attr.id];
+    const parts = [`${attr.label} ${formatModifier(base)}`];
+    if (penalty) parts.push(`armadura −${penalty}`);
+    if (result.edge) parts.push(result.edge.value > 0 ? 'com Vantagem' : 'com Desvantagem');
+    if (experiences.length) parts.push(`com ${experiences.map((e) => e.name).join(' e ')}`);
+
+    showDualityRoll({
+      title: `Teste de ${attr.label}`,
+      label: parts.join(', '),
+      result,
+      message: messageFor(result),
+      actions,
+    });
   }
 
   #status(c) {
@@ -247,8 +367,30 @@ export class SheetPage {
       return;
     }
 
-    const options = SHORT_REST_MOVES.map((m) => ({ value: m.id, label: m.label }));
-    const chosen = SHORT_REST_MOVES.slice(0, SHORT_REST_MOVE_COUNT).map((m) => m.id);
+    // Todos os movimentos à vista, cada um com − e + (pode repetir o mesmo)
+    const counts = Object.fromEntries(SHORT_REST_MOVES.map((m) => [m.id, 0]));
+    const chosenCount = () => Object.values(counts).reduce((a, b) => a + b, 0);
+    const status = h('p', { class: 'pontos', 'aria-live': 'polite' });
+
+    const pickers = SHORT_REST_MOVES.map((move) => counter({
+      label: move.label,
+      value: 0,
+      min: 0,
+      max: SHORT_REST_MOVE_COUNT,
+      canIncrease: () => chosenCount() < SHORT_REST_MOVE_COUNT,
+      onChange: (value) => {
+        counts[move.id] = value;
+        refresh();
+      },
+    }));
+
+    function refresh() {
+      const n = chosenCount();
+      status.textContent = `Escolhidos: ${n} de ${SHORT_REST_MOVE_COUNT}`;
+      status.classList.toggle('pontos--completo', n === SHORT_REST_MOVE_COUNT);
+      pickers.forEach((p) => p.refresh());
+    }
+    refresh();
 
     openDialog({
       title: 'Descanso curto',
@@ -256,15 +398,19 @@ export class SheetPage {
       content: [
         h('p', {}, `Gasta ${SHORT_REST_SUPPLY_COST} suprimento (você tem ${character.supplies.current}). ` +
           `Escolha ${SHORT_REST_MOVE_COUNT} movimentos; pode repetir. Tudo arredonda para cima.`),
-        chosen.map((id, i) => selectField({
-          label: `Movimento ${i + 1}`,
-          value: id,
-          options,
-          onChange: (value) => { chosen[i] = value; },
-        })),
+        status,
+        h('div', { class: 'movimentos' }, pickers.map((p) => p.element)),
         h('p', { class: 'campo__dica' }, GM_FEAR_REMINDER),
       ],
-      onConfirm: () => this.#applyRest(() => shortRest(this.#session.character, chosen), 'Descanso curto feito.'),
+      onConfirm: () => {
+        const chosen = SHORT_REST_MOVES.flatMap((m) => Array(counts[m.id]).fill(m.id));
+        if (chosen.length !== SHORT_REST_MOVE_COUNT) {
+          showToast(`Escolha ${SHORT_REST_MOVE_COUNT} movimentos (faltam ${SHORT_REST_MOVE_COUNT - chosen.length}).`);
+          return false; // mantém o diálogo aberto
+        }
+        this.#applyRest(() => shortRest(this.#session.character, chosen), 'Descanso curto feito.');
+        return true;
+      },
     });
   }
 
@@ -317,10 +463,53 @@ export class SheetPage {
       offWeapon && main?.hands !== 2 ? this.#damageButtons(offWeapon) : null,
       shield ? this.#fissures({ title: 'Fissuras do escudo', key: 'shield', slots: shield.slots }) : null,
       textBlock('Armadura', armorText),
+      profile?.rd.sides ? this.#armorRollButton(armor, profile) : null,
       profile
         ? this.#fissures({ title: 'Fissuras da armadura', key: 'armor', slots: profile.slots, brokenLabel: 'Estragada' })
         : null,
     );
+  }
+
+  // Armadura com redução de dano em dados (ex.: 1d4, 2d6). RD fixa não precisa rolar.
+  #armorRollButton(armor, profile) {
+    const broken = this.#session.character.armor.marked >= profile.slots;
+    return h('div', { class: 'grupo-botoes botoes-dano' },
+      h('button', {
+        class: 'botao botao--pequeno botao--secundario',
+        type: 'button',
+        disabled: broken,
+        title: broken ? 'Armadura estragada: precisa ser restaurada antes de usar' : 'Rolar a redução de dano da armadura',
+        onclick: () => this.#rollArmor(armor, profile),
+      }, broken ? 'Armadura estragada' : `🛡 Reduzir dano ${formatRd(profile.rd)}`),
+    );
+  }
+
+  #rollArmor(armor, profile) {
+    const c = this.#session.character;
+    const rd = formatRd(profile.rd);
+
+    // Regra: depois de usar a armadura, ela recebe uma fissura
+    const actions = !this.#readOnly && c.armor.marked < profile.slots
+      ? [{
+          label: 'Marcar 1 fissura',
+          onClick: () => {
+            this.#update((s) => ({ armor: { ...s.armor, marked: Math.min(profile.slots, s.armor.marked + 1) } }));
+            this.#render();
+          },
+        }]
+      : [];
+
+    showRoll({
+      title: armor.name,
+      label: `Redução de dano ${rd}`,
+      result: rollDice(rd),
+      message: {
+        title: 'Subtraia do dano recebido',
+        text: profile.halvesDamage ? 'Armadura Mágica: o dano que passar ainda é reduzido pela metade.' : '',
+        note: 'Depois de usar a armadura, ela recebe uma fissura.',
+      },
+      actions,
+    });
   }
 
   // Botões de rolagem de dano da arma: normal e Sucesso Crítico (máximo + rolagem)

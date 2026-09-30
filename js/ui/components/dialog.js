@@ -4,12 +4,13 @@
 // aberto (ex.: formulário com campo inválido). Enter num campo confirma.
 // extraAction: botão opcional à esquerda, ex. { label: 'Sair da conta', onClick }.
 // onCancel: chamado se fechar SEM confirmar (botão de cancelar, Esc).
+// focusConfirm: abre com o foco no botão de confirmar (Enter confirma na hora).
 // Devolve { close }.
 import { h, showToast } from '../dom.js';
 
 export function openDialog({
   title, content = [], confirmLabel = 'Confirmar', cancelLabel = 'Cancelar',
-  onConfirm, onCancel, extraAction = null, danger = false,
+  onConfirm, onCancel, extraAction = null, danger = false, focusConfirm = false,
 }) {
   let confirmed = false;
   const close = () => dialog.close();
@@ -56,5 +57,6 @@ export function openDialog({
 
   document.body.append(dialog);
   dialog.showModal();
+  if (focusConfirm) confirmButton.focus();
   return { close };
 }
