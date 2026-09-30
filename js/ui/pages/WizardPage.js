@@ -1,6 +1,9 @@
 // Criação/edição da ficha em etapas. Salva sozinho a cada alteração.
-import { h, showToast } from '../dom.js';
+// Ficha NOVA é um rascunho até o Concluir: ao tentar sair antes, pergunta se quer
+// descartar; se não, mostra o que falta preencher.
+import { h, append, showToast } from '../dom.js';
 import { emptyState } from '../components/emptyState.js';
+import { openDialog } from '../components/dialog.js';
 import { EditSession } from '../../services/EditSession.js';
 import { hasErrors } from '../../domain/validation.js';
 import { normalizeCharacter } from '../../domain/normalize.js';
@@ -18,6 +21,9 @@ export class WizardPage {
   #outlet = null;
   #destroyed = false;
   #showErrorsOnRender = false; // ao concluir com etapa pendente, já abre ela com os erros
+  #showPending = false; // painel "Falta preencher" (depois de desistir de descartar)
+  #discarded = false;
+  #index = 0;
 
   constructor({ characters, campaigns, router, gameData, steps, images }) {
     this.#campaigns = campaigns;
@@ -73,7 +79,65 @@ export class WizardPage {
 
   unmount() {
     this.#destroyed = true;
-    this.#session?.dispose();
+    // Rascunho descartado: não salva nada (senão recriaria a ficha apagada)
+    this.#session?.dispose({ save: !this.#discarded });
+  }
+
+  // Chamado pelo router antes de sair (links, abas, botão voltar do navegador)
+  beforeLeave() {
+    if (!this.#session?.character.draft) return true;
+
+    return new Promise((resolve) => {
+      openDialog({
+        title: 'Descartar esta ficha?',
+        danger: true,
+        confirmLabel: 'Descartar ficha',
+        cancelLabel: 'Continuar editando',
+        content: [
+          h('p', {}, 'Esta ficha ainda não foi concluída. Se sair agora, ela será descartada.'),
+          h('p', { class: 'campo__dica' }, 'Para guardar, preencha o que falta e clique em Concluir na última etapa.'),
+        ],
+        onConfirm: async () => {
+          await this.#discard();
+          resolve(true);
+        },
+        onCancel: () => {
+          this.#showPending = true;
+          this.#render(this.#index);
+          resolve(false);
+        },
+      });
+    });
+  }
+
+  async #discard() {
+    this.#discarded = true;
+    this.#session.dispose({ save: false });
+    await this.#characters.remove(this.#session.character.id);
+    showToast('Ficha descartada.');
+  }
+
+  // Etapas com algo faltando, com as mensagens de cada uma
+  #pendingSteps() {
+    return this.#steps
+      .map((step, index) => ({ step, index, errors: this.#validate(step) }))
+      .filter(({ errors }) => hasErrors(errors));
+  }
+
+  #pendingPanel() {
+    const pending = this.#pendingSteps();
+    if (!pending.length) {
+      return h('section', { class: 'card pendencias pendencias--ok', role: 'status' },
+        h('strong', {}, 'Tudo preenchido!'),
+        ' Vá até a última etapa e clique em Concluir para salvar a ficha.');
+    }
+    return h('section', { class: 'card pendencias', role: 'status' },
+      h('h2', {}, 'Falta preencher para salvar'),
+      h('ul', {}, pending.map(({ step, index, errors }) => h('li', {},
+        h('button', { class: 'pendencias__etapa', type: 'button', onclick: () => this.#goTo(index) }, step.title),
+        h('span', {}, Object.values(errors).join(' ')),
+      ))),
+    );
   }
 
   #indexOf(stepId) {
@@ -90,6 +154,7 @@ export class WizardPage {
   }
 
   #render(index) {
+    this.#index = index;
     const session = this.#session;
     const step = this.#steps[index];
     const isFirst = index === 0;
@@ -124,7 +189,10 @@ export class WizardPage {
           this.#goTo(pending);
           return;
         }
+        const wasDraft = session.character.draft;
+        session.update({ draft: false }); // agora é uma ficha de verdade
         session.flush();
+        if (wasDraft) showToast('Ficha salva!');
         this.#router.navigate(`/ficha/${session.character.id}`);
       } else {
         this.#goTo(index + 1);
@@ -155,7 +223,13 @@ export class WizardPage {
     renderStep(this.#showErrorsOnRender ? this.#validate(step) : {});
     this.#showErrorsOnRender = false;
     this.#outlet.classList.add('pagina--com-barra');
-    this.#outlet.replaceChildren(stepper, body, bottomBar);
+    this.#outlet.replaceChildren();
+    append(this.#outlet,
+      stepper,
+      this.#showPending && session.character.draft ? this.#pendingPanel() : null,
+      body,
+      bottomBar,
+    );
     stepper.children[index]?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 }

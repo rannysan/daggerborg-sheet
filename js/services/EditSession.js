@@ -69,9 +69,11 @@ export class EditSession {
     this.#autosave.flush();
   }
 
-  dispose() {
+  // save: false descarta alterações pendentes (ex.: rascunho sendo excluído)
+  dispose({ save = true } = {}) {
     this.#unsubscribe();
-    this.flush();
+    if (save) this.flush();
+    else this.#autosave.cancel();
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
 

@@ -1,6 +1,6 @@
 // Campanha: #/campanha/:id — informações, membros, convite e os personagens de
 // todos, atualizados em tempo real (o Mestre vê na hora quem tomou dano).
-import { h, showToast } from '../dom.js';
+import { h, append, showToast } from '../dom.js';
 import { emptyState } from '../components/emptyState.js';
 import { openDialog } from '../components/dialog.js';
 import { openCampaignDialog } from '../components/campaignDialog.js';
@@ -87,7 +87,8 @@ export class CampaignPage {
     }, onError));
 
     this.#stops.push(this.#characters.watchCampaign(id, (roster) => {
-      this.#roster = roster.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+      // Rascunhos (fichas ainda sendo criadas) não aparecem para a campanha
+      this.#roster = roster.filter((c) => !c.draft).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
       this.#renderRoster();
     }, onError));
   }
@@ -103,7 +104,8 @@ export class CampaignPage {
     const c = this.#campaign;
     const members = [...c.memberIds].sort((a, b) => (a === c.ownerId ? -1 : b === c.ownerId ? 1 : 0));
 
-    this.#infoEl.replaceChildren(
+    this.#infoEl.replaceChildren();
+    append(this.#infoEl,
       h('div', { class: 'cabecalho-pagina' },
         h('div', {},
           h('h1', {}, c.name),
@@ -228,7 +230,7 @@ export class CampaignPage {
   }
 
   async #link() {
-    const available = (await this.#characters.list()).filter((c) => !c.campaignId);
+    const available = (await this.#characters.list()).filter((c) => !c.campaignId && !c.draft);
     if (!available.length) {
       showToast('Você não tem fichas sem campanha. Crie uma aqui mesmo!');
       return;
@@ -255,6 +257,7 @@ export class CampaignPage {
 
   async #createHere() {
     const character = await this.#characters.create({
+      draft: true,
       campaignId: this.#campaign.id,
       player: this.#profile.displayName,
     });

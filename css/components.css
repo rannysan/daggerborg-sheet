@@ -473,3 +473,22 @@
 
 /* ---------- Carregando (página esperando dados) ---------- */
 .carregando { margin: 0; padding: 32px 16px; text-align: center; color: var(--texto-suave); }
+
+/* ---------- Painel "Falta preencher" (rascunho no wizard) ---------- */
+.pendencias { border-color: var(--cor-perigo); }
+.pendencias h2 { font-size: 1rem; margin-bottom: 8px; }
+.pendencias ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pendencias li { display: grid; gap: 2px; }
+.pendencias li span { font-size: 0.85rem; color: var(--texto-suave); }
+.pendencias__etapa {
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--cor-principal);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pendencias--ok { border-color: var(--cor-principal); }

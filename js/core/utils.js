@@ -11,6 +11,12 @@ export function debounce(fn, wait) {
     }, wait);
   };
 
+  // Descarta o que estiver pendente, sem executar
+  debounced.cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+  };
+
   debounced.flush = () => {
     if (timer === null) return;
     clearTimeout(timer);

@@ -78,20 +78,27 @@ export class CharacterListPage {
         h('div', {},
           h('h2', {}, character.name || 'Sem nome'),
           h('span', { class: 'ficha-item__meta' }, meta),
-          this.#campaignNames.has(character.campaignId)
-            ? h('div', { class: 'selos' },
-                h('a', { class: 'selo', href: `#/campanha/${character.campaignId}` },
-                  `🎲 ${this.#campaignNames.get(character.campaignId)}`))
-            : null,
+          h('div', { class: 'selos' },
+            character.draft ? h('span', { class: 'selo selo--aviso' }, 'Rascunho') : null,
+            this.#campaignNames.has(character.campaignId)
+              ? h('a', { class: 'selo', href: `#/campanha/${character.campaignId}` },
+                  `🎲 ${this.#campaignNames.get(character.campaignId)}`)
+              : null,
+          ),
         ),
       ),
       h('div', { class: 'grupo-botoes' },
-        h('a', { class: 'botao botao--pequeno', href: `#/ficha/${character.id}` }, 'Abrir'),
-        h('a', { class: 'botao botao--pequeno botao--secundario', href: `#/editar/${character.id}` }, 'Editar'),
-        h('button', {
-          class: 'botao botao--pequeno botao--secundario', type: 'button',
-          onclick: () => this.#characters.export(character),
-        }, 'Exportar'),
+        // Rascunho (ficha nova não concluída): só continuar ou excluir
+        character.draft
+          ? h('a', { class: 'botao botao--pequeno', href: `#/editar/${character.id}` }, 'Continuar')
+          : [
+              h('a', { class: 'botao botao--pequeno', href: `#/ficha/${character.id}` }, 'Abrir'),
+              h('a', { class: 'botao botao--pequeno botao--secundario', href: `#/editar/${character.id}` }, 'Editar'),
+              h('button', {
+                class: 'botao botao--pequeno botao--secundario', type: 'button',
+                onclick: () => this.#characters.export(character),
+              }, 'Exportar'),
+            ],
         h('button', {
           class: 'botao botao--pequeno botao--perigo', type: 'button',
           onclick: () => this.#remove(character),
@@ -101,7 +108,7 @@ export class CharacterListPage {
   }
 
   async #create() {
-    const character = await this.#characters.create({ player: this.#profile.displayName });
+    const character = await this.#characters.create({ player: this.#profile.displayName, draft: true });
     this.#router.navigate(`/editar/${character.id}`);
   }
 

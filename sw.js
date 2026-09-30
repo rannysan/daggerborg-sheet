@@ -1,7 +1,7 @@
 // Service worker: roda em segundo plano e intercepta as requisições do site.
 // IMPORTANTE: sempre que mudar arquivos do site, aumente a versão abaixo
 // para o navegador baixar tudo de novo.
-const CACHE = 'dagger-sheet-v19';
+const CACHE = 'dagger-sheet-v20';
 
 // Arquivos guardados na instalação (o "esqueleto" do app para funcionar offline).
 // Ao criar um arquivo .js/.css/.json novo, adicione aqui também.

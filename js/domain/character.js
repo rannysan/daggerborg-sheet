@@ -38,6 +38,10 @@ export function createCharacter(overrides = {}) {
     ownerId: null,
     campaignId: null,
 
+    // Rascunho: ficha nova ainda não concluída no wizard. Não aparece para a
+    // campanha e, se a pessoa desistir, é descartada.
+    draft: false,
+
     player: '',
     name: '',
     pronouns: '',

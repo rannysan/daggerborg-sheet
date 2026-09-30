@@ -5,12 +5,17 @@
 //   unmount()              → opcional: limpa inscrições, salva pendências
 //   update(params)         → opcional: reaproveita a página na mesma rota;
 //                            retorna true se tratou a mudança
+//   beforeLeave()          → opcional: chamado antes de sair da página (links,
+//                            abas, botão voltar). Devolve true/false (ou Promise):
+//                            false cancela a navegação e mantém a página.
 const LOADING_DELAY_MS = 250;
 
 export class Router {
   #container;
   #routes = [];
   #current = null; // { route, page }
+  #currentPath = null;
+  #leaving = false; // um beforeLeave (ex.: diálogo) está esperando resposta
 
   constructor(container) {
     this.#container = container;
@@ -74,7 +79,28 @@ export class Router {
 
     // Mesma rota: deixa a página atual tratar, se ela souber (evita recarregar)
     if (this.#current?.route === match.route && this.#current.page.update?.(match.params)) {
+      this.#currentPath = path;
       return;
+    }
+
+    // A página atual pode segurar a saída (ex.: ficha nova ainda não concluída).
+    // Se ela recusar, a URL volta para a página atual.
+    if (this.#current?.page.beforeLeave && path !== this.#currentPath) {
+      if (this.#leaving) {
+        history.replaceState(null, '', `#${this.#currentPath}`);
+        return;
+      }
+      this.#leaving = true;
+      let allowed;
+      try {
+        allowed = await this.#current.page.beforeLeave();
+      } finally {
+        this.#leaving = false;
+      }
+      if (!allowed) {
+        history.replaceState(null, '', `#${this.#currentPath}`);
+        return;
+      }
     }
 
     this.#current?.page.unmount?.();
@@ -87,6 +113,7 @@ export class Router {
 
     const page = match.route.factory();
     this.#current = { route: match.route, page };
+    this.#currentPath = path;
 
     // Página que demora (ex.: esperando a nuvem): mostra "Carregando…" em vez de
     // tela em branco. Só aparece depois de um instante, para não piscar.
