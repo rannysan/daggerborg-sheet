@@ -36,11 +36,10 @@ export function setupInstallButton(button) {
   });
 }
 
+// Como num app: o aviso só aparece quando está SEM internet
 export function setupNetworkStatus(element) {
   const refresh = () => {
-    const online = navigator.onLine;
-    element.textContent = online ? 'online' : 'offline';
-    element.classList.toggle('offline', !online);
+    element.hidden = navigator.onLine;
   };
   window.addEventListener('online', refresh);
   window.addEventListener('offline', refresh);

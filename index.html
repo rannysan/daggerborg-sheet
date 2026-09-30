@@ -26,9 +26,12 @@
   <title>Dagger Sheet</title>
   <meta name="description" content="Crie e gerencie fichas de personagem de RPG, mesmo offline.">
 
-  <!-- PWA: manifesto e cor da barra do sistema -->
+  <!-- PWA: manifesto e cor da barra do sistema (ajustada pelo tema) -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#6d28d9">
+  <meta name="theme-color" content="#0e0c14">
+
+  <!-- Tema salvo aplicado antes de pintar a página (evita "piscar" o tema errado) -->
+  <script src="js/theme-boot.js"></script>
 
   <!-- iOS: ícone e modo "app" ao adicionar à tela inicial -->
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -41,16 +44,30 @@
   <link rel="stylesheet" href="css/components.css">
 </head>
 <body>
-  <header class="topo">
-    <a class="topo__marca" href="#/">Dagger Sheet</a>
-    <nav class="abas" aria-label="Seções">
-      <a class="abas__item" href="#/" data-aba="fichas">Fichas</a>
-      <a class="abas__item" href="#/campanhas" data-aba="campanhas">Campanhas</a>
-    </nav>
-    <div class="topo__acoes">
-      <div id="conta"></div>
-      <button id="btn-instalar" class="botao botao--pequeno botao--claro" hidden>Instalar</button>
-      <span id="status-rede" class="status">online</span>
+  <!-- Casca do app (js/ui/shell.js). No celular: barra superior com voltar +
+       título e navegação na parte de baixo. No desktop: marca + navegação no topo. -->
+  <header class="barra-topo">
+    <div class="barra-topo__interno">
+      <button id="btn-voltar" class="botao-icone barra-topo__voltar" type="button" aria-label="Voltar" hidden>
+        <span data-icone="arrow-left"></span>
+      </button>
+      <a class="marca" href="#/">Dagger Sheet</a>
+      <span id="titulo-tela" class="barra-topo__titulo"></span>
+
+      <nav class="nav-topo" aria-label="Seções">
+        <a class="nav-topo__item" href="#/" data-aba="fichas"><span data-icone="scroll-text"></span>Fichas</a>
+        <a class="nav-topo__item" href="#/campanhas" data-aba="campanhas"><span data-icone="users"></span>Campanhas</a>
+        <a class="nav-topo__item" href="#/perfil" data-aba="perfil"><span data-icone="user"></span>Perfil</a>
+      </nav>
+
+      <div class="barra-topo__acoes">
+        <span id="status-rede" class="status" hidden><span data-icone="wifi-off"></span>Offline</span>
+        <button id="btn-instalar" class="botao botao--pequeno botao--instalar" aria-label="Instalar o app" hidden>
+          <span data-icone="download"></span><span class="so-desktop">Instalar</span>
+        </button>
+        <!-- Conta: "Entrar" ou avatar (js/ui/components/headerAccount.js) -->
+        <div id="conta-topo" class="conta-topo"></div>
+      </div>
     </div>
   </header>
 
@@ -65,6 +82,19 @@
       <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Termos</a>.
     </small>
   </footer>
+
+  <!-- Navegação inferior (celular), como num app -->
+  <nav class="nav-inferior" aria-label="Seções">
+    <a class="nav-inferior__item" href="#/" data-aba="fichas">
+      <span data-icone="scroll-text"></span><span>Fichas</span>
+    </a>
+    <a class="nav-inferior__item" href="#/campanhas" data-aba="campanhas">
+      <span data-icone="users"></span><span>Campanhas</span>
+    </a>
+    <a class="nav-inferior__item" href="#/perfil" data-aba="perfil">
+      <span data-icone="user"></span><span>Perfil</span>
+    </a>
+  </nav>
 
   <noscript>Este app precisa de JavaScript ativado.</noscript>
 

@@ -1,6 +1,8 @@
 // Campanha: #/campanha/:id — informações, membros, convite e os personagens de
 // todos, atualizados em tempo real (o Mestre vê na hora quem tomou dano).
 import { h, append, showToast } from '../dom.js';
+import { icon } from '../icons.js';
+import { setShellTitle } from '../shell.js';
 import { emptyState } from '../components/emptyState.js';
 import { openDialog } from '../components/dialog.js';
 import { openCampaignDialog } from '../components/campaignDialog.js';
@@ -105,6 +107,7 @@ export class CampaignPage {
     const members = [...c.memberIds].sort((a, b) => (a === c.ownerId ? -1 : b === c.ownerId ? 1 : 0));
 
     this.#infoEl.replaceChildren();
+    setShellTitle(c.name);
     append(this.#infoEl,
       h('div', { class: 'cabecalho-pagina' },
         h('div', {},
@@ -113,9 +116,8 @@ export class CampaignPage {
             this.#master ? 'Você é o Mestre' : `Mestre: ${memberName(c, c.ownerId)}`),
         ),
         h('div', { class: 'grupo-botoes' },
-          h('a', { class: 'botao botao--secundario', href: '#/campanhas' }, '← Campanhas'),
           invitesOpen(c)
-            ? h('button', { class: 'botao', type: 'button', onclick: () => this.#share() }, 'Copiar convite')
+            ? h('button', { class: 'botao', type: 'button', onclick: () => this.#share() }, icon('copy'), 'Copiar convite')
             : h('span', { class: 'selo selo--aviso' }, 'Convites fechados'),
         ),
       ),

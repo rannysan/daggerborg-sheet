@@ -1,5 +1,6 @@
 // Tela inicial: "Minhas fichas" (só as que eu criei, com o selo da campanha de cada uma)
 import { h, showToast } from '../dom.js';
+import { icon } from '../icons.js';
 import { emptyState } from '../components/emptyState.js';
 import { formatDate } from '../../core/utils.js';
 import { findClass } from '../../domain/classes.js';
@@ -82,7 +83,7 @@ export class CharacterListPage {
             character.draft ? h('span', { class: 'selo selo--aviso' }, 'Rascunho') : null,
             this.#campaignNames.has(character.campaignId)
               ? h('a', { class: 'selo', href: `#/campanha/${character.campaignId}` },
-                  `🎲 ${this.#campaignNames.get(character.campaignId)}`)
+                  icon('users'), this.#campaignNames.get(character.campaignId))
               : null,
           ),
         ),

@@ -1,5 +1,6 @@
 // Retrato do personagem: exibição, seletor (wizard) e botão de troca (ficha)
 import { h, showToast } from '../dom.js';
+import { icon } from '../icons.js';
 
 // Imagem redonda, ou a inicial do nome quando não há imagem.
 // size: 'pequeno' | 'medio' | 'grande'
@@ -88,7 +89,7 @@ export function portraitButton({ character, onPick, onChange }) {
   function render() {
     button.replaceChildren(
       portrait({ portrait: current, name: character.name }, { size: 'medio' }),
-      h('span', { class: 'retrato-botao__selo', 'aria-hidden': 'true' }, current ? '✎' : '+'),
+      h('span', { class: 'retrato-botao__selo', 'aria-hidden': 'true' }, icon(current ? 'pencil' : 'camera')),
     );
   }
 

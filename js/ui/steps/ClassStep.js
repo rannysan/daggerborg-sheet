@@ -1,4 +1,5 @@
 import { h, append } from '../dom.js';
+import { icon } from '../icons.js';
 import { classAbilities, classAbilitiesSummary, costLegend } from '../components/classAbilities.js';
 import {
   computeVitalsMax, formulaLabel, meetsRequirement, requirementLabel,
@@ -70,7 +71,7 @@ function classOption(cls, { attributes, tier, selected, onSelect }) {
     allowed
       ? null
       : h('p', { class: 'classe-opcao__aviso' },
-          `🔒 Para liberar: ${requirementLabel(cls)} (você tem ${formatModifier(current)}).`),
+          icon('lock'), ` Para liberar: ${requirementLabel(cls)} (você tem ${formatModifier(current)}).`),
     h('div', { class: 'classe-opcao__vitais' },
       h('span', { title: `PV = ${formulaLabel(cls.hp)}` }, `Vida ${vitals.hp}`),
       h('span', { title: `Estresse = ${formulaLabel(cls.stress)}` }, `Estresse ${vitals.stress}`),

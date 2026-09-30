@@ -2,6 +2,8 @@
 // Ficha NOVA é um rascunho até o Concluir: ao tentar sair antes, pergunta se quer
 // descartar; se não, mostra o que falta preencher.
 import { h, append, showToast } from '../dom.js';
+import { icon } from '../icons.js';
+import { setShellTitle } from '../shell.js';
 import { emptyState } from '../components/emptyState.js';
 import { openDialog } from '../components/dialog.js';
 import { EditSession } from '../../services/EditSession.js';
@@ -220,16 +222,66 @@ export class WizardPage {
         isLast ? 'Concluir' : 'Continuar →'),
     );
 
+    // Celular: barra de progresso no lugar do stepper; tocar abre a lista de etapas
+    const progress = h('button', {
+      class: 'progresso',
+      type: 'button',
+      'aria-label': `Etapa ${index + 1} de ${this.#steps.length}: ${step.title}. Tocar para ver todas as etapas.`,
+      onclick: () => this.#openStepList(index),
+    },
+      h('span', { class: 'progresso__texto' },
+        h('span', {}, `Etapa ${index + 1} de ${this.#steps.length}`),
+        h('strong', {}, step.title),
+        icon('chevron-down'),
+      ),
+      h('progress', { class: 'progresso__barra', max: this.#steps.length, value: index + 1 }),
+    );
+
+    setShellTitle(session.character.draft ? 'Nova ficha' : `Editar ${session.character.name || 'ficha'}`);
+
     renderStep(this.#showErrorsOnRender ? this.#validate(step) : {});
     this.#showErrorsOnRender = false;
     this.#outlet.classList.add('pagina--com-barra');
     this.#outlet.replaceChildren();
     append(this.#outlet,
       stepper,
+      progress,
       this.#showPending && session.character.draft ? this.#pendingPanel() : null,
       body,
       bottomBar,
     );
     stepper.children[index]?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
+  // Lista de etapas (celular): pular direto para qualquer uma, vendo o que falta
+  #openStepList(current) {
+    const { close } = openDialog({
+      title: 'Etapas da ficha',
+      confirmLabel: 'Fechar',
+      content: [
+        h('ol', { class: 'lista-etapas' },
+          this.#steps.map((s, i) => {
+            const pending = hasErrors(this.#validate(s));
+            return h('li', {},
+              h('button', {
+                class: 'lista-etapas__item',
+                type: 'button',
+                'aria-current': i === current ? 'step' : null,
+                onclick: () => {
+                  close();
+                  this.#goTo(i);
+                },
+              },
+                h('span', { class: 'lista-etapas__numero' }, String(i + 1)),
+                h('span', { class: 'lista-etapas__nome' }, s.title),
+                pending
+                  ? h('span', { class: 'lista-etapas__estado lista-etapas__estado--pendente' }, 'Falta preencher')
+                  : h('span', { class: 'lista-etapas__estado' }, icon('check')),
+              ),
+            );
+          }),
+        ),
+      ],
+    });
   }
 }

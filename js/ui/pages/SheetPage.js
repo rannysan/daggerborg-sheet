@@ -2,13 +2,15 @@
 // fissuras e a condição Vulnerável, e fazer descansos. Tudo salvo sozinho (EditSession).
 // Na nuvem, atualiza em tempo real; fichas de outros jogadores abrem só para leitura
 // (o Mestre da campanha pode editar).
-import { h, showToast } from '../dom.js';
+import { h, append, showToast } from '../dom.js';
+import { icon } from '../icons.js';
+import { setShellBack, setShellTitle } from '../shell.js';
 import { emptyState } from '../components/emptyState.js';
 import { poolCounter } from '../components/counter.js';
 import { pipTrack } from '../components/pipTrack.js';
 import { textBlock } from '../components/textBlock.js';
 import { openDialog } from '../components/dialog.js';
-import { classAbilities } from '../components/classAbilities.js';
+import { classAbilities, costIcon, costLegend } from '../components/classAbilities.js';
 import { portrait, portraitButton } from '../components/portrait.js';
 import { showDualityRoll, showRoll } from '../components/rollPopup.js';
 import { counter } from '../components/counter.js';
@@ -32,6 +34,14 @@ import { normalizeCharacter } from '../../domain/normalize.js';
 import { canEditCharacter } from '../../domain/campaign.js';
 import { formatModifier } from '../../core/utils.js';
 
+// Abas da ficha no celular (no desktop as seções ficam lado a lado)
+const SHEET_TABS = Object.freeze([
+  { id: 'atributos', label: 'Atributos', icon: 'dices' },
+  { id: 'estado', label: 'Estado', icon: 'heart' },
+  { id: 'equipamento', label: 'Equipamento', icon: 'sword' },
+  { id: 'habilidades', label: 'Habilidades', icon: 'book-open' },
+]);
+
 const GM_FEAR_REMINDER = 'Lembrete: o Mestre ganha 1 Medo por personagem que descansa.';
 
 export class SheetPage {
@@ -45,6 +55,7 @@ export class SheetPage {
   #readOnly = false;
   #campaign = null;
   #unwatch = null;
+  #tab = SHEET_TABS[0].id; // aba aberta (mantida ao redesenhar)
 
   constructor({ characters, campaigns, gameData, images }) {
     this.#characters = characters;
@@ -97,41 +108,47 @@ export class SheetPage {
   }
 
   // Desenha a ficha inteira. Marcações do dia a dia (contadores, trilhas) se
-  // atualizam sozinhas; só o descanso, que muda vários valores, redesenha tudo.
+  // atualizam sozinhas; só o descanso e o tempo real redesenham tudo.
+  //
+  // Celular: topo "herói" (retrato + Vida/Estresse/Esperança sempre à vista) e
+  // as seções em abas. Desktop: as quatro seções lado a lado, sem abas.
   #render() {
     const c = this.#session.character;
-    this.#outlet.replaceChildren(
-      this.#header(c),
-      h('div', { class: 'ficha-grade' },
-        this.#attributes(c),
-        h('div', { class: 'coluna' },
-          this.#status(c),
-          this.#readOnly ? null : this.#rest(),
-          this.#equipment(c),
-        ),
-      ),
-      this.#abilities(c),
-      h('section', { class: 'card' },
-        h('h2', {}, 'Outros'),
-        textBlock('Outros', c.other),
+    const mine = !c.ownerId || c.ownerId === this.#campaigns.uid;
+
+    // Barra superior: nome da ficha; ficha de outra pessoa volta para a campanha
+    setShellTitle(c.name || 'Ficha');
+    setShellBack(!mine && this.#campaign ? `/campanha/${this.#campaign.id}` : '/');
+
+    this.#outlet.replaceChildren();
+    append(this.#outlet,
+      this.#hero(c, mine),
+      this.#tabBar(),
+      h('div', { class: 'ficha-paineis' },
+        this.#panel('atributos', 'Atributos', this.#attributes(c)),
+        this.#panel('estado', 'Estado', this.#status(c)),
+        this.#panel('equipamento', 'Equipamento', this.#equipment(c)),
+        this.#panel('habilidades', 'Habilidades', this.#abilities(c)),
       ),
     );
   }
 
-  #header(c) {
+  // Topo: retrato, nome, classe, selos e os recursos mais usados na mesa
+  #hero(c, mine) {
     const className = findClass(this.#gameData.classes, c.classId)?.name ?? 'Sem classe';
-    const meta = [className, c.pronouns, c.player && `Jogador(a): ${c.player}`]
-      .filter(Boolean)
-      .join(' · ');
-
+    const meta = [className, c.pronouns, c.player && `Jogador(a): ${c.player}`].filter(Boolean).join(' · ');
     const campaign = this.#campaign;
-    const mine = !c.ownerId || c.ownerId === this.#campaigns.uid;
-    const back = mine || !campaign
-      ? h('a', { class: 'botao botao--secundario', href: '#/' }, '← Fichas')
-      : h('a', { class: 'botao botao--secundario', href: `#/campanha/${campaign.id}` }, '← Campanha');
 
-    return h('div', { class: 'cabecalho-pagina' },
-      h('div', { class: 'identidade' },
+    const pool = (key, label, labelIcon = null) => poolCounter({
+      label,
+      labelIcon,
+      pool: c[key],
+      readOnly: this.#readOnly,
+      onChange: (current) => this.#update((s) => ({ [key]: { ...s[key], current } })),
+    });
+
+    return h('section', { class: 'card ficha-heroi' },
+      h('div', { class: 'ficha-heroi__topo' },
         this.#readOnly
           ? portrait(c, { size: 'medio' })
           : portraitButton({
@@ -139,20 +156,73 @@ export class SheetPage {
               onPick: (file) => this.#images.toPortrait(file),
               onChange: (value) => this.#update({ portrait: value }),
             }),
-        h('div', {},
+        h('div', { class: 'ficha-heroi__identidade' },
           h('h1', {}, c.name || 'Sem nome'),
           meta ? h('span', { class: 'ficha-item__meta' }, meta) : null,
           h('div', { class: 'selos' },
-            campaign ? h('a', { class: 'selo', href: `#/campanha/${campaign.id}` }, `🎲 ${campaign.name}`) : null,
-            this.#readOnly ? h('span', { class: 'selo selo--aviso' }, 'Só leitura') : null,
+            campaign ? h('a', { class: 'selo', href: `#/campanha/${campaign.id}` }, icon('users'), campaign.name) : null,
+            this.#readOnly ? h('span', { class: 'selo selo--aviso' }, icon('lock'), 'Só leitura') : null,
             !this.#readOnly && !mine ? h('span', { class: 'selo' }, 'Editando como Mestre') : null,
           ),
         ),
+        this.#readOnly
+          ? null
+          : h('a', { class: 'botao-icone ficha-heroi__editar', href: `#/editar/${c.id}`, 'aria-label': 'Editar ficha', title: 'Editar ficha' },
+              icon('pencil')),
       ),
-      h('div', { class: 'grupo-botoes' },
-        back,
-        this.#readOnly ? null : h('a', { class: 'botao', href: `#/editar/${c.id}` }, 'Editar'),
+      h('div', { class: 'ficha-vitais' },
+        pool('hp', 'Vida'),
+        pool('stress', 'Estresse', costIcon('stress')),
+        h('div', { class: 'ficha-vitais__esperanca' },
+          h('span', { class: 'contador__rotulo' }, costIcon('hope'), 'Esperança'),
+          pipTrack({
+            label: 'Esperança',
+            itemLabel: 'Esperança',
+            slots: HOPE_MAX,
+            marked: c.hope,
+            readOnly: this.#readOnly,
+            onChange: (hope) => this.#update({ hope }),
+          }),
+        ),
       ),
+    );
+  }
+
+  // Abas (só aparecem no celular). Trocar de aba não redesenha: só mostra/esconde.
+  #tabBar() {
+    const bar = h('div', { class: 'abas-ficha', role: 'tablist', 'aria-label': 'Seções da ficha' },
+      SHEET_TABS.map((tab) => h('button', {
+        class: 'abas-ficha__item',
+        type: 'button',
+        role: 'tab',
+        id: `aba-${tab.id}`,
+        'aria-controls': `painel-${tab.id}`,
+        'aria-selected': String(tab.id === this.#tab),
+        onclick: () => this.#selectTab(tab.id),
+      }, icon(tab.icon), h('span', {}, tab.label))),
+    );
+    return bar;
+  }
+
+  #selectTab(id) {
+    this.#tab = id;
+    this.#outlet.querySelectorAll('.abas-ficha__item').forEach((el) => {
+      el.setAttribute('aria-selected', String(el.id === `aba-${id}`));
+    });
+    this.#outlet.querySelectorAll('.ficha-painel').forEach((el) => {
+      el.classList.toggle('ficha-painel--ativo', el.id === `painel-${id}`);
+    });
+  }
+
+  #panel(id, title, ...content) {
+    return h('section', {
+      class: id === this.#tab ? 'card ficha-painel ficha-painel--ativo' : 'card ficha-painel',
+      id: `painel-${id}`,
+      role: 'tabpanel',
+      'aria-labelledby': `aba-${id}`,
+    },
+      h('h2', { class: 'ficha-painel__titulo' }, title),
+      content,
     );
   }
 
@@ -169,27 +239,22 @@ export class SheetPage {
     const profile = this.#armorProfile(c);
     const penaltyFor = (id) => (profile?.penaltyAttributes.includes(id) ? profile.penalty : 0);
 
-    return h('section', { class: 'card' },
-      h('h2', {}, 'Atributos'),
-      h('div', { class: 'stats' },
-        ATTRIBUTES.map((attr) => h('div', { class: 'stat' },
-          h('span', { class: 'stat__rotulo' }, attr.label),
-          h('span', { class: 'stat__valor' }, formatModifier(c.attributes[attr.id])),
-          h('span', { class: 'stat__dica' }, attr.hint),
-          penaltyFor(attr.id)
-            ? h('span', { class: 'stat__penalidade' }, `${formatModifier(-penaltyFor(attr.id))} pela armadura`)
-            : null,
-          h('div', { class: 'stat__acoes' },
-            // Um botão só: abre as opções (Experiências, Vantagem/Desvantagem) e rola
-            h('button', {
-              class: 'botao botao--pequeno',
-              type: 'button',
-              'aria-label': `Rolar teste de ${attr.label}`,
-              onclick: () => this.#openRollOptions(attr, penaltyFor(attr.id)),
-            }, '🎲 Rolar'),
-          ),
-        )),
-      ),
+    // Grade 2×2: valor grande e o botão de rolar ocupando a largura do cartão
+    return h('div', { class: 'atributos' },
+      ATTRIBUTES.map((attr) => h('div', { class: 'atributo' },
+        h('span', { class: 'atributo__rotulo' }, attr.label),
+        h('span', { class: 'atributo__valor' }, formatModifier(c.attributes[attr.id])),
+        penaltyFor(attr.id)
+          ? h('span', { class: 'stat__penalidade' }, `${formatModifier(-penaltyFor(attr.id))} pela armadura`)
+          : null,
+        h('span', { class: 'atributo__dica' }, attr.hint),
+        h('button', {
+          class: 'botao atributo__rolar',
+          type: 'button',
+          'aria-label': `Rolar teste de ${attr.label}`,
+          onclick: () => this.#openRollOptions(attr, penaltyFor(attr.id)),
+        }, icon('dices'), 'Rolar'),
+      )),
     );
   }
 
@@ -208,7 +273,7 @@ export class SheetPage {
 
     openDialog({
       title: `Teste de ${attr.label}`,
-      confirmLabel: '🎲 Rolar',
+      confirmLabel: [icon('dices'), 'Rolar'],
       focusConfirm: true, // rolagem simples: clicar em Rolar e apertar Enter
       content: [
         h('div', { class: 'opcoes-teste' },
@@ -294,14 +359,8 @@ export class SheetPage {
     });
   }
 
+  // Estado: suprimentos, condição e descansos (Vida, Estresse e Esperança ficam no topo)
   #status(c) {
-    const pool = (key, label) => poolCounter({
-      label,
-      pool: c[key],
-      readOnly: this.#readOnly,
-      onChange: (current) => this.#update((s) => ({ [key]: { ...s[key], current } })),
-    });
-
     const vulnerable = h('button', {
       class: 'botao botao--secundario alternar',
       type: 'button',
@@ -312,46 +371,32 @@ export class SheetPage {
         vulnerable.setAttribute('aria-pressed', String(next));
         this.#update({ vulnerable: next });
       },
-    }, 'Vulnerável');
+    }, icon('flame'), 'Vulnerável');
 
-    return h('section', { class: 'card' },
-      h('h2', {}, 'Estado'),
+    return [
       h('div', { class: 'contadores' },
-        pool('hp', 'Vida'),
-        pool('stress', 'Estresse'),
-        pool('supplies', 'Suprimentos'),
+        poolCounter({
+          label: 'Suprimentos',
+          pool: c.supplies,
+          readOnly: this.#readOnly,
+          onChange: (current) => this.#update((s) => ({ supplies: { ...s.supplies, current } })),
+        }),
       ),
-      h('div', { class: 'linha-estado' },
-        h('div', {},
-          h('h3', { class: 'rotulo' }, `Esperança (máx. ${HOPE_MAX})`),
-          pipTrack({
-            label: 'Esperança',
-            itemLabel: 'Esperança',
-            slots: HOPE_MAX,
-            marked: c.hope,
-            readOnly: this.#readOnly,
-            onChange: (hope) => this.#update({ hope }),
-          }),
+      h('div', { class: 'bloco-estado' },
+        h('h3', { class: 'rotulo' }, 'Condição'),
+        vulnerable,
+        h('span', { class: 'campo__dica' }, 'Vulnerável: ataca e se defende com Desvantagem.'),
+      ),
+      this.#readOnly ? null : h('div', { class: 'bloco-estado' },
+        h('h3', { class: 'rotulo' }, 'Descanso'),
+        h('div', { class: 'grupo-botoes grupo-botoes--cheio' },
+          h('button', { class: 'botao botao--secundario', type: 'button', onclick: () => this.#openShortRest() },
+            icon('sparkles'), 'Descanso curto'),
+          h('button', { class: 'botao botao--secundario', type: 'button', onclick: () => this.#openLongRest() },
+            icon('moon'), 'Descanso longo'),
         ),
-        h('div', {},
-          h('h3', { class: 'rotulo' }, 'Condição'),
-          vulnerable,
-          h('span', { class: 'campo__dica' }, 'Ataca e se defende com Desvantagem.'),
-        ),
       ),
-    );
-  }
-
-  #rest() {
-    return h('section', { class: 'card' },
-      h('h2', {}, 'Descanso'),
-      h('div', { class: 'grupo-botoes' },
-        h('button', { class: 'botao botao--secundario', type: 'button', onclick: () => this.#openShortRest() },
-          'Descanso curto'),
-        h('button', { class: 'botao botao--secundario', type: 'button', onclick: () => this.#openLongRest() },
-          'Descanso longo'),
-      ),
-    );
+    ];
   }
 
   #openShortRest() {
@@ -449,19 +494,25 @@ export class SheetPage {
       ? `${armor.name}${material ? ` · ${material.name}` : ''}\n${armorSummary(profile)}`
       : '';
 
-    return h('section', { class: 'card' },
-      h('h2', {}, 'Equipamento'),
-      textBlock('Mão principal', mainText),
-      main ? this.#damageButtons(main) : null,
-      textBlock('Mão secundária', offText),
-      offWeapon && main?.hands !== 2 ? this.#damageButtons(offWeapon) : null,
-      shield ? this.#fissures({ title: 'Fissuras do escudo', key: 'shield', slots: shield.slots }) : null,
-      textBlock('Armadura', armorText),
-      profile?.rd.sides ? this.#armorRollButton(armor, profile) : null,
-      profile
-        ? this.#fissures({ title: 'Fissuras da armadura', key: 'armor', slots: profile.slots, brokenLabel: 'Estragada' })
-        : null,
-    );
+    // Um bloco por item (texto + botões + marcadores), separados por uma linha
+    return [
+      subsection(
+        textBlock('Mão principal', mainText),
+        main ? this.#damageButtons(main) : null,
+      ),
+      subsection(
+        textBlock('Mão secundária', offText),
+        offWeapon && main?.hands !== 2 ? this.#damageButtons(offWeapon) : null,
+        shield ? this.#fissures({ title: 'Fissuras do escudo', key: 'shield', slots: shield.slots }) : null,
+      ),
+      subsection(
+        textBlock('Armadura', armorText),
+        profile?.rd.sides ? this.#armorRollButton(armor, profile) : null,
+        profile
+          ? this.#fissures({ title: 'Fissuras da armadura', key: 'armor', slots: profile.slots, brokenLabel: 'Estragada' })
+          : null,
+      ),
+    ];
   }
 
   // Armadura com redução de dano em dados (ex.: 1d4, 2d6). RD fixa não precisa rolar.
@@ -474,7 +525,7 @@ export class SheetPage {
         disabled: broken,
         title: broken ? 'Armadura estragada: precisa ser restaurada antes de usar' : 'Rolar a redução de dano da armadura',
         onclick: () => this.#rollArmor(armor, profile),
-      }, broken ? 'Armadura estragada' : `🛡 Reduzir dano ${formatRd(profile.rd)}`),
+      }, icon('shield'), broken ? 'Armadura estragada' : `Reduzir dano ${formatRd(profile.rd)}`),
     );
   }
 
@@ -517,7 +568,7 @@ export class SheetPage {
 
     return h('div', { class: 'grupo-botoes botoes-dano' },
       h('button', { class: 'botao botao--pequeno botao--dano', type: 'button', onclick: () => roll(false) },
-        `🎲 ${label}`),
+        icon('swords'), label),
       h('button', {
         class: 'botao botao--pequeno botao--secundario',
         type: 'button',
@@ -561,12 +612,18 @@ export class SheetPage {
 
     const cls = findClass(this.#gameData.classes, c.classId);
 
-    return h('section', { class: 'card' },
-      h('h2', {}, cls ? `Habilidades · ${cls.name}` : 'Habilidades'),
-      textBlock('Experiências', experiences),
+    // Experiências │ Habilidades de classe (com a legenda) │ Passiva │ Outros
+    return [
+      subsection(textBlock('Experiências', experiences)),
       cls
-        ? classAbilities(cls, { tier: c.tier })
-        : h('p', { class: 'campo__dica' }, 'Escolha uma classe em Editar para ver as habilidades.'),
-    );
+        ? subsection(costLegend(), classAbilities(cls, { tier: c.tier }))
+        : subsection(h('p', { class: 'campo__dica' }, 'Escolha uma classe em Editar para ver as habilidades.')),
+      subsection(textBlock('Outros', c.other)),
+    ];
   }
+}
+
+// Bloco de uma seção da ficha; blocos seguidos ganham uma linha divisória
+function subsection(...children) {
+  return h('div', { class: 'subsecao' }, children);
 }

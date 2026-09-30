@@ -25,15 +25,18 @@ import { SheetPage } from './ui/pages/SheetPage.js';
 import { CampaignListPage } from './ui/pages/CampaignListPage.js';
 import { CampaignPage } from './ui/pages/CampaignPage.js';
 import { InvitePage } from './ui/pages/InvitePage.js';
+import { ProfilePage } from './ui/pages/ProfilePage.js';
+import { setupShell } from './ui/shell.js';
+import { mountHeaderAccount } from './ui/components/headerAccount.js';
+import { watchSystemTheme } from './ui/theme.js';
 import { emptyState } from './ui/components/emptyState.js';
-import { mountAccountButton } from './ui/components/accountButton.js';
 import { openDialog } from './ui/components/dialog.js';
 import { h, showToast } from './ui/dom.js';
 
 registerServiceWorker();
 setupInstallButton(document.getElementById('btn-instalar'));
 setupNetworkStatus(document.getElementById('status-rede'));
-setupTabs();
+watchSystemTheme();
 
 const app = document.getElementById('app');
 
@@ -83,16 +86,6 @@ try {
 
   const wizard = () => new WizardPage({ characters, campaigns, router, gameData, images, steps: WIZARD_STEPS });
 
-  router
-    .add('/', () => new CharacterListPage({ characters, campaigns, profile, router, gameData }))
-    .add('/editar/:id', wizard)
-    .add('/editar/:id/:step', wizard)
-    .add('/ficha/:id', () => new SheetPage({ characters, campaigns, gameData, images }))
-    .add('/campanhas', () => new CampaignListPage({ campaigns, router }))
-    .add('/campanha/:id', () => new CampaignPage({ campaigns, characters, profile, router, gameData }))
-    .add('/entrar/:id', () => new InvitePage({ campaigns, router }))
-    .start();
-
   // Primeiro login neste aparelho: oferece levar as fichas locais para a conta
   const offerUpload = async () => {
     const count = await countCharacters(local);
@@ -112,7 +105,8 @@ try {
     });
   };
 
-  mountAccountButton(document.getElementById('conta'), {
+  // Ações da conta (usadas pela tela de Perfil)
+  const account = {
     auth,
     profile,
     onSignIn: async (user) => {
@@ -137,23 +131,25 @@ try {
       await campaigns.syncMyName().catch((erro) => console.warn('[Perfil] Campanhas:', erro));
       await router.reload();
     },
-  });
+  };
+
+  setupShell(router);
+  mountHeaderAccount(document.getElementById('conta-topo'), account);
+
+  // meta de cada rota: aba ativa, título na barra do celular, destino do voltar
+  // e se esconde a navegação inferior (o wizard tem a própria barra de ações)
+  router
+    .add('/', () => new CharacterListPage({ characters, campaigns, profile, router, gameData }), { tab: 'fichas' })
+    .add('/editar/:id', wizard, { tab: 'fichas', title: 'Ficha', back: '/', hideNav: true })
+    .add('/editar/:id/:step', wizard, { tab: 'fichas', title: 'Ficha', back: '/', hideNav: true })
+    .add('/ficha/:id', () => new SheetPage({ characters, campaigns, gameData, images }), { tab: 'fichas', title: 'Ficha', back: '/' })
+    .add('/campanhas', () => new CampaignListPage({ campaigns, router }), { tab: 'campanhas' })
+    .add('/campanha/:id', () => new CampaignPage({ campaigns, characters, profile, router, gameData }), { tab: 'campanhas', title: 'Campanha', back: '/campanhas' })
+    .add('/entrar/:id', () => new InvitePage({ campaigns, router }), { tab: 'campanhas', title: 'Convite', back: '/campanhas' })
+    .add('/perfil', () => new ProfilePage(account), { tab: 'perfil' })
+    .start();
 } catch (erro) {
   console.error('[App] Falha ao iniciar:', erro);
   app.replaceChildren(emptyState('Não foi possível iniciar o app. Verifique a conexão e recarregue a página.'));
 }
 
-// Abas do cabeçalho (Fichas | Campanhas): destaca a seção da rota atual
-function setupTabs() {
-  const tabs = document.querySelectorAll('[data-aba]');
-  const refresh = () => {
-    const path = location.hash.slice(1) || '/';
-    const section = /^\/(campanha|entrar)/.test(path) ? 'campanhas' : 'fichas';
-    tabs.forEach((tab) => {
-      if (tab.dataset.aba === section) tab.setAttribute('aria-current', 'page');
-      else tab.removeAttribute('aria-current');
-    });
-  };
-  window.addEventListener('hashchange', refresh);
-  refresh();
-}

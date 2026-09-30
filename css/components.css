@@ -1,150 +1,162 @@
-/* Componentes reutilizáveis */
+/* Componentes reutilizáveis. Cores, raios e sombras vêm dos tokens (base.css). */
+
+/* ============================================================
+   Básicos
+   ============================================================ */
 
 /* ---------- Card ---------- */
 .card {
   background: var(--card);
   border: 1px solid var(--borda);
   border-radius: var(--raio);
-  padding: 20px;
+  padding: 18px;
+  box-shadow: var(--sombra-leve);
 }
-.card h2 { font-size: 1.1rem; }
+.card h2 { font-size: 1.05rem; }
 .card p { color: var(--texto-suave); }
 
 /* ---------- Botões ---------- */
 .botao {
   font: inherit;
-  font-size: 1rem;
-  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 44px;              /* alvo de toque confortável */
+  padding: 10px 18px;
   border: 1px solid transparent;
-  border-radius: var(--raio);
-  background: var(--cor-principal);
+  border-radius: 999px;
+  background: var(--cor-botao);
   color: #fff;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
+.botao:hover { background: var(--cor-botao-hover); }
 .botao:active { transform: scale(0.97); }
-.botao:disabled { opacity: 0.5; cursor: not-allowed; }
-.botao--secundario { background: transparent; color: var(--cor-principal); border-color: var(--cor-principal); }
+.botao:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.botao--secundario {
+  background: var(--superficie-2);
+  color: var(--texto);
+  border-color: var(--borda);
+}
+.botao--secundario:hover { background: var(--borda); }
 .botao--perigo { background: var(--cor-perigo); }
-.botao--claro { background: rgba(255, 255, 255, 0.2); }
-.botao--pequeno { font-size: 0.85rem; padding: 6px 12px; }
+.botao--perigo:hover { background: color-mix(in srgb, var(--cor-perigo) 85%, black); }
+.botao--perigo-texto { color: var(--cor-perigo); }
+.botao--claro { background: rgba(255, 255, 255, 0.15); }
+.botao--pequeno { font-size: 0.85rem; min-height: 36px; padding: 6px 14px; }
+.botao--grande { min-height: 52px; padding: 12px 24px; font-size: 1rem; width: 100%; }
 
 .grupo-botoes { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* ---------- Status online/offline ---------- */
-.status {
-  font-size: 0.75rem;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+/* Instalar: no celular só o ícone, discreto */
+.botao--instalar { background: var(--cor-principal-suave); color: var(--cor-principal); }
+.botao--instalar:hover { background: var(--cor-principal-suave); }
+/* Conta na barra superior: Entrar (sem conta) ou avatar (com conta) */
+.conta-topo { display: flex; }
+.avatar-conta {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cor-botao), #a855f7);
+  color: #fff;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  box-shadow: 0 0 0 2px var(--fundo), 0 0 0 3px var(--borda-forte);
 }
-.status.offline { background: var(--cor-perigo); }
+.avatar-conta:hover { filter: brightness(1.1); }
+
+@media (max-width: 899px) {
+  .so-desktop { display: none; }
+  /* No celular, Instalar e Entrar viram botões redondos só com ícone */
+  .botao--instalar,
+  .botao--entrar { width: 40px; min-height: 40px; padding: 0; }
+}
+.grupo-botoes--cheio > .botao { flex: 1 1 140px; }
+
+/* ---------- Aviso de rede (só aparece offline) ---------- */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--cor-perigo-suave);
+  color: var(--cor-perigo);
+}
 
 /* ---------- Campos ---------- */
 .campo { display: grid; gap: 6px; }
-.campo label { font-weight: 600; font-size: 0.9rem; }
+.campo label, .campo__rotulo { font-weight: 600; font-size: 0.88rem; }
 .campo input,
 .campo select,
-.campo textarea {
+.campo textarea,
+.campo-link {
   font: inherit;
   width: 100%;
-  padding: 10px 12px;
+  min-height: 44px;
+  padding: 10px 14px;
   border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  background: var(--fundo);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie-2);
   color: var(--texto);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--cor-principal);
+  box-shadow: 0 0 0 3px var(--cor-principal-suave);
+}
+.campo textarea { resize: vertical; line-height: 1.45; }
+.campo input[aria-invalid="true"] { border-color: var(--cor-perigo); }
 .campo__erro { color: var(--cor-perigo); font-size: 0.85rem; }
+.campo__dica { font-size: 0.78rem; color: var(--texto-suave); }
 
-/* ---------- Stepper (abas do wizard) ---------- */
-/* No celular vira uma faixa com rolagem horizontal */
-.stepper {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 4px;
-  background: var(--card);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-}
-.stepper::-webkit-scrollbar { display: none; }
-.stepper__item {
-  flex: 0 0 auto;
-  font: inherit;
-  font-size: 0.8rem;
+/* ---------- Checkbox ---------- */
+.campo--check label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; min-height: 44px; }
+.campo--check input { width: 20px; height: 20px; min-height: 0; margin: 0; accent-color: var(--cor-botao); }
+
+/* ---------- Rótulos, selos e avisos ---------- */
+.rotulo {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
   color: var(--texto-suave);
-  cursor: pointer;
 }
-.stepper__item[aria-current="step"] { background: var(--cor-principal); color: #fff; }
-
-/* ---------- Caixas de status (HP, Stress...) ---------- */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 8px;
-}
-.stat {
-  text-align: center;
-  padding: 10px 6px;
-  background: var(--card);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-}
-.stat__rotulo { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--texto-suave); }
-.stat__valor { display: block; font-size: 1.5rem; font-weight: 700; }
-
-/* ---------- Lista de fichas ---------- */
-.lista-fichas {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-}
-.ficha-item { display: grid; gap: 8px; }
-.ficha-item h2 { margin: 0; }
-.ficha-item__meta { font-size: 0.85rem; color: var(--texto-suave); }
-
-.vazio { text-align: center; color: var(--texto-suave); padding: 32px 16px; }
-
-/* ---------- Toast (mensagens rápidas) ---------- */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--altura-barra-inferior) + 16px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  z-index: 20;
-  max-width: calc(100% - 32px);
-  padding: 10px 16px;
-  border-radius: var(--raio);
-  background: var(--texto);
-  color: var(--fundo);
-  font-size: 0.9rem;
-}
-
-/* ---------- Dicas de campo e de atributo ---------- */
-.campo__dica,
-.stat__dica { font-size: 0.75rem; color: var(--texto-suave); }
-.stat__dica { display: block; margin-top: 4px; font-style: italic; }
-
-/* ---------- Rótulo pequeno (títulos internos da ficha) ---------- */
-.rotulo { margin: 0 0 4px; font-size: 0.8rem; text-transform: uppercase; color: var(--texto-suave); }
 .linha-rotulo { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .linha-rotulo .rotulo { margin: 0; }
+
+.selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--cor-principal-suave);
+  color: var(--cor-principal);
+  text-decoration: none;
+}
+.selo--aviso { background: var(--cor-perigo-suave); color: var(--cor-perigo); }
+
 .aviso {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 999px;
@@ -152,173 +164,146 @@
   color: #fff;
 }
 
-/* ---------- Contador (Vida, Estresse, Suprimentos, Atributos) ---------- */
-.contadores {
+.vazio { text-align: center; color: var(--texto-suave); padding: 32px 16px; }
+.vazio p { color: var(--texto-suave); }
+.carregando { margin: 0; padding: 32px 16px; text-align: center; color: var(--texto-suave); }
+
+/* ---------- Toast (mensagens rápidas) ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--altura-nav) + 16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--texto);
+  color: var(--fundo);
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: var(--sombra);
+  animation: toast-entra 0.2s ease-out;
+}
+body.sem-nav .toast { bottom: calc(var(--altura-barra-inferior) + 16px + env(safe-area-inset-bottom)); }
+@keyframes toast-entra {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ---------- Controle segmentado (ex.: tema) ---------- */
+.segmentado {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
 }
-.contador { display: grid; gap: 6px; justify-items: center; align-content: start; text-align: center; }
-.contador__rotulo { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: var(--texto-suave); }
-.contador__dica { font-size: 0.75rem; font-style: italic; color: var(--texto-suave); }
-.contador__controles { display: flex; align-items: center; gap: 12px; }
-.contador__valor { min-width: 4.5ch; text-align: center; font-size: 1.5rem; font-weight: 700; }
-/* alvo de toque de 44px no celular */
-.contador__botao { width: 44px; height: 44px; padding: 0; font-size: 1.4rem; }
-
-/* ---------- Pontos de atributo ---------- */
-.pontos {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: var(--raio);
-  background: var(--cor-principal-suave);
-  color: var(--texto);
-  font-weight: 700;
-  text-align: center;
-}
-.pontos--completo { background: var(--cor-principal); color: #fff; }
-
-/* ---------- Marcadores (fissuras, Esperança) ---------- */
-.marcadores { display: flex; flex-wrap: wrap; gap: 6px; }
-.marcador {
-  width: 44px;
-  height: 44px;
-  padding: 8px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
+.segmentado__opcao {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
   cursor: pointer;
 }
-.marcador__forma {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: var(--borda);
-}
-.marcador--escudo .marcador__forma { clip-path: polygon(50% 0, 100% 15%, 100% 55%, 50% 100%, 0 55%, 0 15%); }
-.marcador--circulo .marcador__forma { border-radius: 50%; }
-.marcador[aria-pressed="true"] .marcador__forma { background: var(--cor-principal); }
+.segmentado__opcao input { position: absolute; opacity: 0; pointer-events: none; }
+.segmentado__opcao:has(input:checked) { background: var(--card); color: var(--texto); box-shadow: var(--sombra-leve); }
+.segmentado__opcao:has(input:focus-visible) { outline: 2px solid var(--cor-principal); }
 
-/* ---------- Esperança + condição ---------- */
-.linha-estado {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco) 32px;
-  margin-top: var(--espaco);
-}
-.linha-estado .campo__dica { display: block; margin-top: 4px; }
-
-/* ---------- Trilha de fissuras ---------- */
-.trilha { margin-bottom: 12px; }
-.bloco-texto + .trilha { margin-top: 4px; }
-
-/* ---------- Checkbox ---------- */
-.campo--check label { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
-.campo--check input { width: 20px; height: 20px; margin: 0; accent-color: var(--cor-principal); }
-
-/* ---------- Diálogo ---------- */
+/* ============================================================
+   Diálogo — no celular vira "bottom sheet" (sobe de baixo)
+   ============================================================ */
 .dialogo {
   width: min(480px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
   padding: 0;
   border: 1px solid var(--borda);
-  border-radius: var(--raio);
+  border-radius: 20px;
   background: var(--card);
   color: var(--texto);
+  box-shadow: var(--sombra);
 }
-.dialogo::backdrop { background: rgba(0, 0, 0, 0.5); }
-.dialogo__corpo { display: grid; gap: 12px; padding: 20px; }
-.dialogo__corpo h2 { margin: 0; }
+.dialogo::backdrop { background: rgba(5, 4, 10, 0.6); backdrop-filter: blur(2px); }
+.dialogo__corpo { display: grid; gap: 14px; padding: 22px; }
+.dialogo__corpo h2 { margin: 0; font-size: 1.15rem; }
 .dialogo__corpo p { margin: 0; }
 .dialogo__acoes { justify-content: flex-end; margin-top: 4px; }
+.dialogo__extra { margin-right: auto; }
 
-/* ---------- Botão liga/desliga (Vulnerável) ---------- */
-.alternar[aria-pressed="true"] {
-  background: var(--cor-perigo);
-  border-color: var(--cor-perigo);
-  color: #fff;
+@media (max-width: 640px) {
+  .dialogo {
+    width: 100%;
+    max-width: 100%;
+    max-height: 88dvh;
+    margin: auto 0 0;                      /* gruda embaixo */
+    border-radius: 22px 22px 0 0;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: folha-sobe 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* "alça" da folha */
+  .dialogo__corpo::before {
+    content: '';
+    justify-self: center;
+    width: 40px;
+    height: 4px;
+    margin: -8px 0 2px;
+    border-radius: 999px;
+    background: var(--borda-forte);
+  }
+  .dialogo__acoes { display: grid; grid-template-columns: 1fr 1fr; }
+  .dialogo__acoes .botao { width: 100%; }
+  .dialogo__extra { grid-column: 1 / -1; margin: 0; }
+}
+@keyframes folha-sobe {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
-/* ---------- Bloco de texto da ficha ---------- */
-.bloco-texto + .bloco-texto { margin-top: 12px; }
-.bloco-texto h3 { margin: 0 0 4px; font-size: 0.8rem; text-transform: uppercase; color: var(--texto-suave); }
-.bloco-texto p { margin: 0; color: var(--texto); white-space: pre-wrap; overflow-wrap: anywhere; }
-
-/* ---------- Escolha de classe ---------- */
-.lista-classes { display: grid; gap: 12px; }
-@media (min-width: 900px) {
-  .lista-classes { grid-template-columns: repeat(3, 1fr); }
-}
-.classe-opcao {
+/* ============================================================
+   Listas (fichas, campanhas)
+   ============================================================ */
+.lista-fichas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 10px;
-  align-content: start;
-  padding: 14px;
-  border: 2px solid var(--borda);
-  border-radius: var(--raio);
-  background: var(--fundo);
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
-.classe-opcao:has(input:checked) { border-color: var(--cor-principal); background: var(--cor-principal-suave); }
-.classe-opcao--bloqueada { border-style: dashed; background: transparent; }
-.classe-opcao--bloqueada .classe-opcao__nome { color: var(--texto-suave); }
-.classe-opcao__topo {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  column-gap: 10px;
-  cursor: pointer;
-}
-.classe-opcao__topo input { width: 20px; height: 20px; margin: 0; accent-color: var(--cor-principal); grid-row: span 2; }
-.classe-opcao:has(input:disabled) .classe-opcao__topo { cursor: not-allowed; }
-.classe-opcao__nome { font-weight: 700; font-size: 1.1rem; }
-.classe-opcao__req { font-size: 0.8rem; color: var(--texto-suave); }
-.classe-opcao__aviso { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--cor-perigo); }
-.classe-opcao__detalhes summary { cursor: pointer; font-size: 0.85rem; color: var(--cor-principal); }
-.classe-opcao__detalhes[open] summary { margin-bottom: 4px; }
-.classe-opcao__vitais { display: flex; gap: 8px; flex-wrap: wrap; }
-.classe-opcao__vitais span {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--card);
-  border: 1px solid var(--borda);
-}
+.ficha-item { display: grid; gap: 12px; align-content: start; }
+.ficha-item h2 { margin: 0; font-size: 1.05rem; }
+.ficha-item__nome { margin: 0; font-size: 1rem; }
+.ficha-item__meta { font-size: 0.82rem; color: var(--texto-suave); }
 
-/* ---------- Habilidades de classe ---------- */
-.legenda { font-size: 0.85rem; color: var(--texto-suave); }
-.habilidades .rotulo { margin-top: 8px; }
-.habilidades__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.habilidades__lista li { display: grid; gap: 2px; }
-.habilidade__texto { font-size: 0.9rem; color: var(--texto); }
-.custo { white-space: nowrap; }
-.habilidades__resumo { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.9rem; }
-.habilidades__passiva { font-weight: 700; color: var(--texto-suave); }
-.card > .habilidades { margin-top: 12px; }
+.identidade { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.identidade h1, .identidade h2 { overflow-wrap: anywhere; }
 
-/* ---------- Penalidade de armadura no atributo ---------- */
-.stat__penalidade { display: block; margin-top: 4px; font-size: 0.75rem; font-weight: 700; color: var(--cor-perigo); }
-
-/* ---------- Retrato do personagem ---------- */
+/* ============================================================
+   Retrato
+   ============================================================ */
 .retrato {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--cor-principal-suave);
-  border: 2px solid var(--borda);
+  background: linear-gradient(135deg, var(--cor-principal-suave), var(--superficie-2));
+  border: 2px solid var(--borda-forte);
 }
-.retrato--vazio { color: var(--cor-principal); font-weight: 700; }
+.retrato--vazio { color: var(--cor-principal); font-family: var(--fonte-titulo); font-weight: 700; }
 .retrato--pequeno { width: 48px; height: 48px; font-size: 1.2rem; }
-.retrato--medio { width: 72px; height: 72px; font-size: 1.8rem; }
+.retrato--medio { width: 76px; height: 76px; font-size: 1.9rem; }
 .retrato--grande { width: 112px; height: 112px; font-size: 2.6rem; }
-
-.identidade { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.identidade h1, .identidade h2 { overflow-wrap: anywhere; }
 
 .seletor-retrato { display: flex; flex-wrap: wrap; align-items: center; gap: var(--espaco); }
 .seletor-retrato__acoes { display: grid; gap: 8px; }
-.campo__rotulo { font-weight: 600; font-size: 0.9rem; }
 
 /* Na ficha, o retrato é um botão para trocar a imagem */
 .retrato-botao {
@@ -336,53 +321,491 @@
   bottom: -2px;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--cor-principal);
+  background: var(--cor-botao);
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   border: 2px solid var(--card);
 }
 
-/* ---------- Botões de dano ---------- */
-.botoes-dano { margin: 6px 0 12px; }
-.botao--dano { background: #b91c1c; }
+/* ============================================================
+   Ficha de jogo
+   ============================================================ */
 
-/* ---------- Popup de rolagem ---------- */
+/* ---------- Topo "herói": retrato, nome e recursos sempre à vista ---------- */
+.ficha-heroi {
+  display: grid;
+  gap: 16px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, var(--cor-principal-suave), transparent 60%),
+    var(--card);
+}
+.ficha-heroi__topo { display: flex; align-items: center; gap: 14px; }
+.ficha-heroi__identidade { flex: 1; min-width: 0; }
+.ficha-heroi__identidade h1 { margin: 0 0 2px; font-size: 1.45rem; overflow-wrap: anywhere; }
+.ficha-heroi__editar { align-self: start; margin: -6px -6px 0 0; }
+
+/* Vida, Estresse (contadores compactos) e Esperança */
+.ficha-vitais {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ficha-vitais .contador,
+.ficha-vitais__esperanca {
+  padding: 10px 8px;
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+}
+.ficha-vitais .contador__controles { gap: 6px; }
+.ficha-vitais .contador__valor { font-size: 1.3rem; min-width: 3.6ch; }
+.ficha-vitais .contador__botao { width: 38px; height: 38px; min-height: 0; font-size: 1.15rem; }
+.ficha-vitais__esperanca {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ficha-vitais__esperanca .contador__rotulo { color: var(--cor-destaque); }
+.ficha-vitais__esperanca .marcador[aria-pressed="true"] .marcador__forma { background: var(--cor-destaque); }
+
+/* ---------- Abas (celular) ---------- */
+.abas-ficha {
+  position: sticky;
+  top: calc(var(--altura-topo) + env(safe-area-inset-top));
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--borda);
+  box-shadow: var(--sombra-leve);
+}
+.abas-ficha__item {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.abas-ficha__item .icone { width: 20px; height: 20px; }
+.abas-ficha__item[aria-selected="true"] { background: var(--cor-principal-suave); color: var(--cor-principal); }
+
+/* Painéis: no celular só a aba aberta aparece */
+.ficha-paineis { display: grid; gap: var(--espaco); }
+.ficha-painel { display: none; }
+.ficha-painel--ativo { display: grid; gap: 14px; align-content: start; }
+.ficha-painel__titulo { display: none; }
+
+/* ---------- Atributos: grade 2×2 ---------- */
+/* Todos os cartões com a mesma altura (grid-auto-rows) e o botão sempre embaixo */
+.atributos { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 10px; }
+.atributo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px 10px;
+  text-align: center;
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+}
+.atributo__rotulo { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
+.atributo__valor { font-family: var(--fonte-titulo); font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+.atributo__dica { font-size: 0.72rem; color: var(--texto-suave); min-height: 2.4em; }
+.atributo__rolar { width: 100%; margin-top: auto; }
+.atributo__dica { margin-bottom: 8px; }
+.stat__penalidade { font-size: 0.72rem; font-weight: 700; color: var(--cor-perigo); }
+
+/* ---------- Estado ---------- */
+.bloco-estado { display: grid; gap: 8px; justify-items: start; }
+.bloco-estado .grupo-botoes { width: 100%; }
+.alternar[aria-pressed="true"] {
+  background: var(--cor-perigo);
+  border-color: var(--cor-perigo);
+  color: #fff;
+}
+
+/* ---------- Blocos dentro de uma seção (mãos, armadura, experiências...) ---------- */
+.subsecao { display: grid; gap: 10px; align-content: start; }
+.subsecao + .subsecao { padding-top: 16px; border-top: 1px solid var(--borda); }
+/* A passiva também ganha a linha, separando-a das habilidades de classe */
+.habilidades__lista + .rotulo { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--borda); }
+
+/* ---------- Texto livre (equipamento, habilidades) ---------- */
+.bloco-texto + .bloco-texto { margin-top: 4px; }
+.bloco-texto h3 { margin: 0 0 4px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
+.bloco-texto p { margin: 0; color: var(--texto); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------- Botões de dano e redução ---------- */
+.botoes-dano { margin: 2px 0 6px; }
+.botao--dano { background: var(--cor-perigo); }
+.botao--dano:hover { background: color-mix(in srgb, var(--cor-perigo) 85%, black); }
+
+/* ---------- Trilhas de marcação (fissuras, Esperança) ---------- */
+.trilha { margin-bottom: 4px; }
+.marcadores { display: flex; flex-wrap: wrap; gap: 4px; }
+.marcador {
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.marcador:disabled { cursor: default; }
+.marcador__forma {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--borda-forte);
+  transition: background 0.15s, transform 0.15s;
+}
+.marcador--escudo .marcador__forma { clip-path: polygon(50% 0, 100% 15%, 100% 55%, 50% 100%, 0 55%, 0 15%); }
+.marcador--circulo .marcador__forma { border-radius: 50%; }
+.marcador[aria-pressed="true"] .marcador__forma { background: var(--cor-principal); transform: scale(1.05); }
+
+/* ============================================================
+   Contadores (Vida, Estresse, Suprimentos, Atributos no wizard)
+   ============================================================ */
+.contadores {
+  display: grid;
+  gap: 16px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.contador { display: grid; gap: 6px; justify-items: center; align-content: start; text-align: center; }
+.contador__rotulo { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
+.contador__dica { font-size: 0.72rem; color: var(--texto-suave); }
+.contador__controles { display: flex; align-items: center; gap: 6px; }
+.contador__valor { min-width: 3ch; text-align: center; font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.contador__botao {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  background: var(--superficie-2);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+}
+.contador__botao:hover { background: var(--borda); }
+
+/* Pontos de atributo (wizard) e contagem de escolhas (descanso) */
+.pontos {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-principal-suave);
+  color: var(--texto);
+  font-weight: 700;
+  text-align: center;
+}
+.pontos--completo,
+.card .pontos--completo { background: var(--cor-botao); color: #fff; }
+
+/* Descanso curto: lista de movimentos */
+.movimentos { display: grid; gap: 8px; }
+.movimentos .contador {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  justify-items: start;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie-2);
+}
+.movimentos .contador__rotulo { text-transform: none; letter-spacing: 0; font-size: 0.9rem; color: var(--texto); font-weight: 600; }
+.movimentos .contador__valor { font-size: 1.1rem; min-width: 2ch; }
+.movimentos .contador__botao { width: 36px; height: 36px; font-size: 1.1rem; background: var(--card); }
+
+/* Opções do teste (Vantagem/Desvantagem) */
+.opcoes-teste { display: grid; gap: 8px; }
+.opcoes-teste + .opcoes-teste { padding-top: 12px; border-top: 1px solid var(--borda); }
+.opcoes-teste .rotulo { margin: 0; }
+
+/* ============================================================
+   Wizard
+   ============================================================ */
+
+/* Stepper (desktop) */
+.stepper {
+  display: none;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+}
+.stepper::-webkit-scrollbar { display: none; }
+.stepper__item {
+  flex: 1 0 auto;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.stepper__item:hover { color: var(--texto); }
+.stepper__item[aria-current="step"] { background: var(--cor-botao); color: #fff; }
+
+/* Progresso (celular): toque abre a lista de etapas */
+.progresso {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--card);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.progresso__texto { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--texto-suave); }
+.progresso__texto strong { flex: 1; color: var(--texto); font-size: 0.95rem; }
+.progresso__barra {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  overflow: hidden;
+}
+.progresso__barra::-webkit-progress-bar { background: var(--superficie-2); border-radius: 999px; }
+.progresso__barra::-webkit-progress-value { background: var(--cor-principal); border-radius: 999px; transition: width 0.3s; }
+.progresso__barra::-moz-progress-bar { background: var(--cor-principal); border-radius: 999px; }
+
+/* Lista de etapas (diálogo) */
+.lista-etapas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lista-etapas__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie-2);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lista-etapas__item[aria-current="step"] { border-color: var(--cor-principal); background: var(--cor-principal-suave); }
+.lista-etapas__numero {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.lista-etapas__nome { flex: 1; font-weight: 600; }
+.lista-etapas__estado { font-size: 0.75rem; color: var(--cor-sucesso); }
+.lista-etapas__estado--pendente { color: var(--cor-perigo); font-weight: 700; }
+
+/* Painel "Falta preencher" (rascunho) */
+.pendencias { border-color: var(--cor-perigo); background: var(--cor-perigo-suave); }
+.pendencias h2 { font-size: 1rem; margin-bottom: 8px; }
+.pendencias ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pendencias li { display: grid; gap: 2px; }
+.pendencias li span { font-size: 0.85rem; color: var(--texto-suave); }
+.pendencias__etapa {
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--cor-principal);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pendencias--ok { border-color: var(--cor-principal); background: var(--cor-principal-suave); }
+
+/* ============================================================
+   Classes e habilidades
+   ============================================================ */
+.lista-classes { display: grid; gap: 12px; }
+.classe-opcao {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+  border: 1.5px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+  transition: border-color 0.15s, background 0.15s;
+}
+.classe-opcao:has(input:checked) { border-color: var(--cor-principal); background: var(--cor-principal-suave); }
+.classe-opcao--bloqueada { border-style: dashed; background: transparent; }
+.classe-opcao--bloqueada .classe-opcao__nome { color: var(--texto-suave); }
+.classe-opcao__topo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  cursor: pointer;
+}
+.classe-opcao__topo input { width: 20px; height: 20px; margin: 0; accent-color: var(--cor-botao); grid-row: span 2; }
+.classe-opcao:has(input:disabled) .classe-opcao__topo { cursor: not-allowed; }
+.classe-opcao__nome { font-family: var(--fonte-titulo); font-weight: 700; font-size: 1.15rem; }
+.classe-opcao__req { font-size: 0.8rem; color: var(--texto-suave); }
+.classe-opcao__aviso { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--cor-perigo); }
+.classe-opcao__detalhes summary { cursor: pointer; font-size: 0.85rem; color: var(--cor-principal); }
+.classe-opcao__detalhes[open] summary { margin-bottom: 4px; }
+.classe-opcao__vitais { display: flex; gap: 8px; flex-wrap: wrap; }
+.classe-opcao__vitais span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+}
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie-2);
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+.legenda__item { display: inline-flex; align-items: center; gap: 5px; }
+.habilidades { display: grid; gap: 6px; }
+.habilidades .rotulo { margin-top: 4px; }
+.habilidades__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.habilidades__lista li { display: grid; gap: 2px; }
+.habilidade__texto { font-size: 0.9rem; color: var(--texto); }
+.habilidades__resumo { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.9rem; }
+.habilidades__passiva { font-weight: 700; color: var(--texto-suave); }
+
+/* Custos das habilidades (ícones) */
+.custo { display: inline-flex; align-items: center; gap: 1px; margin-right: 2px; vertical-align: -0.15em; }
+.custo__icone { width: 1em; height: 1em; }
+.custo--hope { color: var(--cor-destaque); fill: currentColor; }
+.custo--stress { color: #60a5fa; }
+.custo--action { color: #facc15; }
+
+/* ============================================================
+   Campanhas
+   ============================================================ */
+.campanha__descricao { color: var(--texto-suave); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.membros { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.membros li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 36px; }
+.membros li .botao { margin-left: auto; }
+.lista-fichas--campanha { margin-top: 12px; }
+.mini-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 0.82rem; color: var(--texto-suave); }
+.mini-stat strong { color: var(--texto); font-size: 0.95rem; }
+.convite { max-width: 560px; }
+.convite h1 { margin-bottom: 4px; }
+
+/* Formulário de uma coluna (dentro de diálogos) */
+.grade-formulario--simples { grid-template-columns: 1fr !important; }
+
+/* ============================================================
+   Perfil
+   ============================================================ */
+.perfil-convite { display: grid; gap: 12px; }
+.perfil-convite p { margin: 0; }
+.perfil-identidade { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.perfil-identidade > div:last-child { display: grid; gap: 2px; min-width: 0; }
+.perfil-identidade__nome { font-size: 1.1rem; }
+.perfil-apelido { display: grid; gap: 10px; margin-bottom: 12px; }
+.perfil-apelido .botao { justify-self: start; }
+.aviso-legal { text-align: center; padding: 4px 8px; }
+.perfil-dica { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; color: var(--cor-principal); }
+
+/* ============================================================
+   Popup de rolagem
+   ============================================================ */
 .rolagem {
   position: fixed;
   right: var(--espaco);
   bottom: calc(var(--espaco) + env(safe-area-inset-bottom));
   z-index: 30;
-  width: min(320px, calc(100% - 2 * var(--espaco)));
+  width: min(340px, calc(100% - 2 * var(--espaco)));
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 16px;
   border: 1px solid var(--borda);
-  border-radius: var(--raio);
+  border-radius: 20px;
   background: var(--card);
   color: var(--texto);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--sombra);
   animation: rolagem-entra 0.2s ease-out;
 }
-.rolagem--critico { border-color: #d97706; box-shadow: 0 0 0 2px #d97706, 0 8px 24px rgba(0, 0, 0, 0.35); }
+/* No celular fica acima da navegação inferior, ocupando a largura */
+@media (max-width: 899px) {
+  .rolagem {
+    left: var(--espaco);
+    right: var(--espaco);
+    width: auto;
+    bottom: calc(var(--altura-nav) + 12px + env(safe-area-inset-bottom));
+  }
+  body.sem-nav .rolagem { bottom: calc(var(--altura-barra-inferior) + 12px + env(safe-area-inset-bottom)); }
+}
+.rolagem--critico { border-color: var(--cor-destaque); box-shadow: 0 0 0 2px var(--cor-destaque), var(--sombra); }
+.rolagem--esperanca { border-color: var(--cor-destaque); }
+.rolagem--medo { border-color: var(--cor-principal); }
+.rolagem--falha .rolagem__total { color: var(--texto-suave); }
 .rolagem__topo { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
 .rolagem__titulo { display: block; font-size: 0.95rem; }
-.rolagem__rotulo { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--cor-principal); }
-.rolagem--critico .rolagem__rotulo { color: #d97706; }
+.rolagem__rotulo { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cor-principal); }
+.rolagem--critico .rolagem__rotulo { color: var(--cor-destaque); }
 .rolagem__fechar {
   width: 32px; height: 32px;
-  border: none; border-radius: 8px;
-  background: transparent; color: var(--texto-suave);
-  font-size: 1.4rem; line-height: 1; cursor: pointer;
+  border: none; border-radius: 50%;
+  background: var(--superficie-2); color: var(--texto-suave);
+  font-size: 1.2rem; line-height: 1; cursor: pointer;
 }
 .rolagem__corpo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rolagem__dados { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rolagem__bonus { font-weight: 700; color: var(--texto-suave); }
-.rolagem__total { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.rolagem__total { font-family: var(--fonte-titulo); font-size: 2.6rem; font-weight: 700; line-height: 1; }
 .rolagem__total--revelado { animation: total-pop 0.3s ease-out; }
-.rolagem__detalhe { font-size: 0.8rem; color: var(--texto-suave); }
+.rolagem__detalhe { font-size: 0.78rem; color: var(--texto-suave); }
+.rolagem__mensagem { display: grid; gap: 2px; font-size: 0.9rem; }
+.rolagem__mensagem strong { font-size: 1rem; }
+.rolagem__mensagem small { color: var(--texto-suave); font-size: 0.75rem; }
+.rolagem--critico .rolagem__mensagem strong { color: var(--cor-destaque); }
+.rolagem__acoes { margin-top: 2px; }
 
 /* ---------- Dados (formato por número de lados) ---------- */
 .dado {
@@ -393,8 +816,8 @@
   font-weight: 800;
   font-size: 1.1rem;
   color: #fff;
-  background: var(--cor-principal);
-  border-radius: 8px;
+  background: var(--cor-botao);
+  border-radius: 10px;
 }
 .dado--d4 { border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); padding-top: 14px; }
 .dado--d8 { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
@@ -403,6 +826,12 @@
 .dado--d20 { border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
 .dado--maximo { background: #d97706; }
 .dado--rolando { animation: dado-rola 0.35s linear infinite; }
+.dado--esperanca { background: #d97706; }        /* dourado: Esperança */
+.dado--medo { background: #4c1d95; }             /* roxo escuro: Medo */
+.dado--vantagem { background: #15803d; }         /* verde: Vantagem (+) */
+.dado--desvantagem { background: var(--cor-perigo); } /* vermelho: Desvantagem (−) */
+.dado-rotulado { display: inline-grid; justify-items: center; gap: 3px; }
+.dado-rotulado__legenda { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: var(--texto-suave); }
 
 @keyframes dado-rola {
   0%   { transform: rotate(0deg) scale(1); }
@@ -419,114 +848,27 @@
   to   { transform: translateY(0); opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .rolagem,
-  .dado--rolando,
-  .rolagem__total--revelado { animation: none; }
+/* ============================================================
+   Desktop (≥ 900px)
+   ============================================================ */
+@media (min-width: 900px) {
+  /* Ficha: sem abas; as quatro seções lado a lado */
+  .abas-ficha { display: none; }
+  /* Seções da mesma linha com a mesma altura */
+  .ficha-paineis { grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .ficha-painel { display: grid; gap: 14px; align-content: start; }
+  .ficha-painel__titulo { display: block; margin: 0; }
+
+  .ficha-heroi { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; }
+  .ficha-vitais { grid-template-columns: 1fr 1fr 1fr; }
+  .ficha-vitais__esperanca { grid-column: auto; flex-direction: column; justify-content: center; }
+  /* 4 marcadores de Esperança numa linha só */
+  .ficha-vitais__esperanca .marcadores { flex-wrap: nowrap; gap: 2px; }
+  .ficha-vitais__esperanca .marcador { width: 34px; height: 34px; padding: 6px; }
+
+  /* Wizard: stepper no lugar da barra de progresso */
+  .stepper { display: flex; }
+  .progresso { display: none; }
+
+  .lista-classes { grid-template-columns: repeat(3, 1fr); }
 }
-
-/* ---------- Botão de conta (cabeçalho) ---------- */
-.conta { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
-
-/* ---------- Selos (campanha, só leitura...) ---------- */
-.selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.selo {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--cor-principal-suave);
-  color: var(--cor-principal);
-  text-decoration: none;
-}
-.selo--aviso { background: var(--cor-perigo); color: #fff; }
-
-/* ---------- Campanha ---------- */
-.campanha__descricao { color: var(--texto-suave); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
-.membros { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
-.membros li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.membros li .botao { margin-left: auto; }
-.lista-fichas--campanha { margin-top: 12px; }
-.ficha-item__nome { margin: 0; font-size: 1.05rem; }
-.mini-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 0.85rem; color: var(--texto-suave); }
-.mini-stat strong { color: var(--texto); font-size: 0.95rem; }
-.convite { max-width: 560px; }
-.convite h1 { margin-bottom: 4px; }
-
-/* Link de convite para copiar à mão */
-.campo-link {
-  font: inherit;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  background: var(--fundo);
-  color: var(--texto);
-}
-
-/* Formulário de uma coluna (dentro de diálogos) */
-.grade-formulario--simples { grid-template-columns: 1fr !important; }
-
-/* Botão extra do diálogo (ex.: Sair da conta) fica à esquerda */
-.dialogo__extra { margin-right: auto; }
-
-/* ---------- Carregando (página esperando dados) ---------- */
-.carregando { margin: 0; padding: 32px 16px; text-align: center; color: var(--texto-suave); }
-
-/* ---------- Painel "Falta preencher" (rascunho no wizard) ---------- */
-.pendencias { border-color: var(--cor-perigo); }
-.pendencias h2 { font-size: 1rem; margin-bottom: 8px; }
-.pendencias ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.pendencias li { display: grid; gap: 2px; }
-.pendencias li span { font-size: 0.85rem; color: var(--texto-suave); }
-.pendencias__etapa {
-  justify-self: start;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  font-weight: 700;
-  color: var(--cor-principal);
-  text-decoration: underline;
-  cursor: pointer;
-}
-.pendencias--ok { border-color: var(--cor-principal); }
-
-/* ---------- Teste de atributo (dualidade) ---------- */
-.stat__acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px; }
-.dado-rotulado { display: inline-grid; justify-items: center; gap: 2px; }
-.dado-rotulado__legenda { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--texto-suave); }
-.dado--esperanca { background: #d97706; }        /* dourado: Esperança */
-.dado--medo { background: #4c1d95; }             /* roxo escuro: Medo */
-.rolagem--esperanca { border-color: #d97706; }
-.rolagem--medo { border-color: #6d28d9; }
-.rolagem--falha .rolagem__total { color: var(--texto-suave); }
-
-.rolagem__mensagem { display: grid; gap: 2px; font-size: 0.9rem; }
-.rolagem__mensagem strong { font-size: 1rem; }
-.rolagem__mensagem small { color: var(--texto-suave); font-size: 0.75rem; }
-.rolagem--critico .rolagem__mensagem strong { color: #d97706; }
-.rolagem__acoes { margin-top: 2px; }
-
-/* ---------- Descanso curto: lista de movimentos ---------- */
-.movimentos { display: grid; gap: 8px; }
-.movimentos .contador {
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  justify-items: start;
-  text-align: left;
-  padding: 6px 10px;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-}
-.movimentos .contador__rotulo { text-transform: none; font-size: 0.9rem; color: var(--texto); font-weight: 600; }
-.movimentos .contador__valor { font-size: 1.1rem; min-width: 2ch; }
-.movimentos .contador__botao { width: 36px; height: 36px; font-size: 1.1rem; }
-.dado--vantagem { background: #15803d; }         /* verde: Vantagem (+) */
-.dado--desvantagem { background: var(--cor-perigo); } /* vermelho: Desvantagem (−) */
-
-/* ---------- Opções do teste (Experiências, Vantagem/Desvantagem) ---------- */
-.opcoes-teste { display: grid; gap: 8px; }
-.opcoes-teste + .opcoes-teste { padding-top: 12px; border-top: 1px solid var(--borda); }
-.opcoes-teste .rotulo { margin: 0; }
