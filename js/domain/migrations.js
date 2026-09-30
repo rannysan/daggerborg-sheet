@@ -62,6 +62,16 @@ const MIGRATIONS = {
     schemaVersion: 6,
     ...(supplies ? { supplies: supplies.max === 2 ? { ...supplies, max: 3 } : supplies } : {}),
   }),
+
+  // v6 → v7: o Estresse virou recurso (começa cheio e é gasto). Antes o número
+  // salvo era o Estresse MARCADO; agora é o que resta: 1 marcado de 5 → 4/5.
+  6: ({ stress, ...rest }) => ({
+    ...rest,
+    schemaVersion: 7,
+    ...(stress && Number.isInteger(stress.max) && Number.isInteger(stress.current)
+      ? { stress: { ...stress, current: Math.min(stress.max, Math.max(0, stress.max - stress.current)) } }
+      : {}),
+  }),
 };
 
 export function migrate(raw) {

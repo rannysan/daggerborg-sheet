@@ -2,7 +2,9 @@
 import { HOPE_MAX, HOPE_START, clamp, isValidPoolMax } from './rules.js';
 
 export const SHORT_REST_SUPPLY_COST = 1;
+// Descanso curto: até 2 movimentos (pode fazer só 1, e pode repetir o mesmo)
 export const SHORT_REST_MOVE_COUNT = 2;
+export const SHORT_REST_MOVE_MIN = 1;
 const SHORT_REST_HOPE = 2;
 const ARMOR_REPAIR = 3;
 const SHIELD_REPAIR = 1;
@@ -24,10 +26,10 @@ export const SHORT_REST_MOVES = Object.freeze([
   },
   {
     id: 'stress',
-    label: 'Curar metade do Estresse máximo',
+    label: 'Recuperar metade do Estresse máximo',
     apply: (c) => ({
       ...c,
-      stress: { ...c.stress, current: Math.max(0, c.stress.current - halfUp(maxOf(c.stress))) },
+      stress: { ...c.stress, current: clamp(c.stress.current + halfUp(maxOf(c.stress)), 0, maxOf(c.stress)) },
     }),
   },
   {
@@ -57,8 +59,8 @@ export function canShortRest(character) {
 
 // moveIds: ids escolhidos, pode repetir (ex.: ['hp', 'hp'])
 export function shortRest(character, moveIds) {
-  if (moveIds.length !== SHORT_REST_MOVE_COUNT) {
-    throw new Error(`Escolha ${SHORT_REST_MOVE_COUNT} movimentos.`);
+  if (moveIds.length < SHORT_REST_MOVE_MIN || moveIds.length > SHORT_REST_MOVE_COUNT) {
+    throw new Error(`Escolha de ${SHORT_REST_MOVE_MIN} a ${SHORT_REST_MOVE_COUNT} movimentos.`);
   }
   if (!canShortRest(character)) {
     throw new Error('Você precisa de 1 suprimento para descansar.');
@@ -81,7 +83,7 @@ export function longRest(character) {
   return {
     ...character,
     hp: { ...character.hp, current: maxOf(character.hp) },
-    stress: { ...character.stress, current: 0 },
+    stress: { ...character.stress, current: maxOf(character.stress) },
     armor: { ...character.armor, marked: 0 },
     shield: { ...character.shield, marked: 0 },
     hope: HOPE_START,

@@ -7,7 +7,7 @@ import {
 
 // Aumente quando mudar o formato de campos existentes e crie a migração em
 // migrations.js. Campos NOVOS não precisam: a migração completa com o padrão.
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export function newId() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -52,7 +52,8 @@ export function createCharacter(overrides = {}) {
     attributes: Object.fromEntries(ATTRIBUTES.map((a) => [a.id, ATTRIBUTE_MIN])),
 
     hp: { current: DEFAULT_HP_MAX, max: DEFAULT_HP_MAX },
-    stress: { current: 0, max: DEFAULT_STRESS_MAX },
+    // Estresse é um recurso como a Vida: começa cheio, é gasto e volta no descanso
+    stress: { current: DEFAULT_STRESS_MAX, max: DEFAULT_STRESS_MAX },
     hope: HOPE_START,
     vulnerable: false,
 

@@ -51,6 +51,6 @@ export function applyClassStats(character, classes) {
   return {
     ...character,
     hp: setPoolMax(character.hp, hp, { followWhenFull: true }),
-    stress: setPoolMax(character.stress, stress),
+    stress: setPoolMax(character.stress, stress, { followWhenFull: true }),
   };
 }

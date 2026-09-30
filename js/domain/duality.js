@@ -15,7 +15,7 @@ export const EXPERIENCE_HOPE_COST = 1;
 export const DUALITY_OUTCOMES = Object.freeze({
   critical: {
     title: 'Sucesso Crítico!',
-    text: 'Você ganha 1 Esperança e pode curar 1 PV e 1 Estresse.',
+    text: 'Você ganha 1 Esperança e pode recuperar 1 PV e 1 Estresse.',
     effect: { hope: 1, healHp: 1, healStress: 1 },
   },
   'success-hope': {
@@ -95,7 +95,7 @@ export function applyDualityEffect(character, effect) {
     next.hp = { ...character.hp, current: clamp(character.hp.current + effect.healHp, 0, character.hp.max) };
   }
   if (effect.healStress) {
-    next.stress = { ...character.stress, current: Math.max(0, character.stress.current - effect.healStress) };
+    next.stress = { ...character.stress, current: clamp(character.stress.current + effect.healStress, 0, character.stress.max) };
   }
   return next;
 }

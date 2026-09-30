@@ -20,7 +20,7 @@ import {
 import { EditSession } from '../../services/EditSession.js';
 import { ATTRIBUTES, HOPE_MAX, HOPE_START } from '../../domain/rules.js';
 import {
-  SHORT_REST_MOVES, SHORT_REST_MOVE_COUNT, SHORT_REST_SUPPLY_COST,
+  SHORT_REST_MOVES, SHORT_REST_MOVE_COUNT, SHORT_REST_MOVE_MIN, SHORT_REST_SUPPLY_COST,
   canShortRest, shortRest, longRest,
 } from '../../domain/rest.js';
 import { findClass, armorPenaltyReduction } from '../../domain/classes.js';
@@ -380,8 +380,8 @@ export class SheetPage {
 
     function refresh() {
       const n = chosenCount();
-      status.textContent = `Escolhidos: ${n} de ${SHORT_REST_MOVE_COUNT}`;
-      status.classList.toggle('pontos--completo', n === SHORT_REST_MOVE_COUNT);
+      status.textContent = `Escolhidos: ${n} de até ${SHORT_REST_MOVE_COUNT}`;
+      status.classList.toggle('pontos--completo', n >= SHORT_REST_MOVE_MIN);
       pickers.forEach((p) => p.refresh());
     }
     refresh();
@@ -391,15 +391,15 @@ export class SheetPage {
       confirmLabel: 'Descansar',
       content: [
         h('p', {}, `Gasta ${SHORT_REST_SUPPLY_COST} suprimento (você tem ${character.supplies.current}). ` +
-          `Escolha ${SHORT_REST_MOVE_COUNT} movimentos; pode repetir. Tudo arredonda para cima.`),
+          `Escolha até ${SHORT_REST_MOVE_COUNT} movimentos (pode fazer só 1, ou repetir o mesmo). Tudo arredonda para cima.`),
         status,
         h('div', { class: 'movimentos' }, pickers.map((p) => p.element)),
         h('p', { class: 'campo__dica' }, GM_FEAR_REMINDER),
       ],
       onConfirm: () => {
         const chosen = SHORT_REST_MOVES.flatMap((m) => Array(counts[m.id]).fill(m.id));
-        if (chosen.length !== SHORT_REST_MOVE_COUNT) {
-          showToast(`Escolha ${SHORT_REST_MOVE_COUNT} movimentos (faltam ${SHORT_REST_MOVE_COUNT - chosen.length}).`);
+        if (chosen.length < SHORT_REST_MOVE_MIN) {
+          showToast('Escolha pelo menos 1 movimento.');
           return false; // mantém o diálogo aberto
         }
         this.#applyRest(() => shortRest(this.#session.character, chosen), 'Descanso curto feito.');
@@ -413,7 +413,7 @@ export class SheetPage {
       title: 'Descanso longo',
       confirmLabel: 'Descansar',
       content: [
-        h('p', {}, 'Só no Refúgio, entre missões. Cura toda a Vida e o Estresse, conserta a armadura ' +
+        h('p', {}, 'Só no Refúgio, entre missões. Recupera toda a Vida e todo o Estresse, conserta a armadura ' +
           `e o escudo, remove Vulnerável e deixa a Esperança em ${HOPE_START}.`),
         h('p', { class: 'campo__dica' }, GM_FEAR_REMINDER),
       ],
