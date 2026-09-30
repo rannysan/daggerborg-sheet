@@ -28,8 +28,9 @@ export class CharacterService {
     return raw ? migrate(raw) : null;
   }
 
-  async create() {
-    return this.#repository.save(createCharacter());
+  // overrides: ex. { campaignId, player } ao criar direto numa campanha
+  async create(overrides = {}) {
+    return this.#repository.save(createCharacter(overrides));
   }
 
   async save(character) {
@@ -45,10 +46,50 @@ export class CharacterService {
     this.#files.downloadJson(`${name}.json`, character);
   }
 
-  // Importa sempre como uma ficha NOVA, para não sobrescrever uma existente
+  // Importa sempre como uma ficha NOVA e SUA (sem dono nem campanha de origem),
+  // para não sobrescrever uma existente
   async import(file) {
     const character = migrate(await this.#files.readJson(file));
     const now = new Date().toISOString();
-    return this.#repository.save({ ...character, id: newId(), createdAt: now, updatedAt: now });
+    return this.#repository.save({
+      ...character, id: newId(), ownerId: null, campaignId: null, createdAt: now, updatedAt: now,
+    });
+  }
+
+  // ---------- Nuvem: campanhas e tempo real ----------
+
+  get supportsCampaigns() {
+    return Boolean(this.#repository.supportsCampaigns);
+  }
+
+  // Ouve mudanças feitas por outra pessoa/aparelho. Devolve a função que para
+  // de ouvir, ou null se o armazenamento atual não tem tempo real (modo local).
+  watch(id, onChange) {
+    return this.#repository.watch?.(id, (raw) => onChange(migrate(raw))) ?? null;
+  }
+
+  watchCampaign(campaignId, onChange, onError) {
+    return this.#repository.watchByCampaign?.(
+      campaignId, (list) => onChange(list.map(migrate)), onError,
+    ) ?? null;
+  }
+
+  getPortrait(id) {
+    return this.#repository.getPortrait?.(id) ?? Promise.resolve(null);
+  }
+
+  // Vincula (campaignId) ou desvincula (null) uma ficha
+  async setCampaign(id, campaignId) {
+    const character = await this.get(id);
+    if (!character) throw new Error('Ficha não encontrada.');
+    return this.save({ ...character, campaignId });
+  }
+
+  // Desvincula as fichas de uma campanha (todas, ou só as de um dono)
+  async unlinkFromCampaign(campaignId, { ownerId = null } = {}) {
+    const linked = (await this.#repository.listByCampaign(campaignId))
+      .filter((c) => !ownerId || c.ownerId === ownerId);
+    for (const character of linked) await this.setCampaign(character.id, null);
+    return linked.length;
   }
 }

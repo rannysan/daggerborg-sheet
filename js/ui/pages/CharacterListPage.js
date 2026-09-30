@@ -1,18 +1,24 @@
-// Tela inicial: "Minhas fichas"
+// Tela inicial: "Minhas fichas" (só as que eu criei, com o selo da campanha de cada uma)
 import { h, showToast } from '../dom.js';
 import { emptyState } from '../components/emptyState.js';
 import { formatDate } from '../../core/utils.js';
 import { findClass } from '../../domain/classes.js';
 import { portrait } from '../components/portrait.js';
+import { openDialog } from '../components/dialog.js';
 
 export class CharacterListPage {
   #characters;
+  #campaigns;
+  #profile;
   #router;
   #gameData;
   #list = null;
+  #campaignNames = new Map(); // id → nome, para os selos
 
-  constructor({ characters, router, gameData }) {
+  constructor({ characters, campaigns, profile, router, gameData }) {
     this.#characters = characters;
+    this.#campaigns = campaigns;
+    this.#profile = profile;
     this.#gameData = gameData;
     this.#router = router;
   }
@@ -43,7 +49,11 @@ export class CharacterListPage {
   }
 
   async #renderList() {
-    const characters = await this.#characters.list();
+    const [characters, campaigns] = await Promise.all([
+      this.#characters.list(),
+      this.#campaigns.available ? this.#campaigns.listMine().catch(() => []) : [],
+    ]);
+    this.#campaignNames = new Map(campaigns.map((c) => [c.id, c.name]));
 
     if (characters.length === 0) {
       this.#list.replaceChildren(emptyState('Você ainda não tem fichas. Crie a primeira!'));
@@ -68,6 +78,11 @@ export class CharacterListPage {
         h('div', {},
           h('h2', {}, character.name || 'Sem nome'),
           h('span', { class: 'ficha-item__meta' }, meta),
+          this.#campaignNames.has(character.campaignId)
+            ? h('div', { class: 'selos' },
+                h('a', { class: 'selo', href: `#/campanha/${character.campaignId}` },
+                  `🎲 ${this.#campaignNames.get(character.campaignId)}`))
+            : null,
         ),
       ),
       h('div', { class: 'grupo-botoes' },
@@ -86,15 +101,25 @@ export class CharacterListPage {
   }
 
   async #create() {
-    const character = await this.#characters.create();
+    const character = await this.#characters.create({ player: this.#profile.displayName });
     this.#router.navigate(`/editar/${character.id}`);
   }
 
-  async #remove(character) {
-    if (!confirm(`Excluir "${character.name || 'Sem nome'}"? Isso não pode ser desfeito.`)) return;
-    await this.#characters.remove(character.id);
-    showToast('Ficha excluída.');
-    await this.#renderList();
+  #remove(character) {
+    openDialog({
+      title: 'Excluir ficha?',
+      confirmLabel: 'Excluir',
+      danger: true,
+      content: [
+        h('p', {}, `"${character.name || 'Sem nome'}" será excluída. Isso não pode ser desfeito.`),
+        character.campaignId ? h('p', { class: 'campo__dica' }, 'Ela também sai da campanha.') : null,
+      ],
+      onConfirm: async () => {
+        await this.#characters.remove(character.id);
+        showToast('Ficha excluída.');
+        await this.#renderList();
+      },
+    });
   }
 
   async #import(input) {

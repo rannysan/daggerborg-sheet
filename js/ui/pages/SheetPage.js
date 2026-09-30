@@ -1,5 +1,7 @@
 // Ficha de jogo: consulta rápida + marcar Vida, Estresse, Esperança, Suprimentos,
 // fissuras e a condição Vulnerável, e fazer descansos. Tudo salvo sozinho (EditSession).
+// Na nuvem, atualiza em tempo real; fichas de outros jogadores abrem só para leitura
+// (o Mestre da campanha pode editar).
 import { h, showToast } from '../dom.js';
 import { emptyState } from '../components/emptyState.js';
 import { poolCounter } from '../components/counter.js';
@@ -8,7 +10,7 @@ import { textBlock } from '../components/textBlock.js';
 import { selectField } from '../components/fields.js';
 import { openDialog } from '../components/dialog.js';
 import { classAbilities } from '../components/classAbilities.js';
-import { portraitButton } from '../components/portrait.js';
+import { portrait, portraitButton } from '../components/portrait.js';
 import { showRoll } from '../components/rollPopup.js';
 import { rollCritical, rollDice } from '../../domain/dice.js';
 import { EditSession } from '../../services/EditSession.js';
@@ -23,20 +25,26 @@ import {
   shieldSummary, weaponSummary,
 } from '../../domain/equipment.js';
 import { normalizeCharacter } from '../../domain/normalize.js';
+import { canEditCharacter } from '../../domain/campaign.js';
 import { formatModifier } from '../../core/utils.js';
 
 const GM_FEAR_REMINDER = 'Lembrete: o Mestre ganha 1 Medo por personagem que descansa.';
 
 export class SheetPage {
   #characters;
+  #campaigns;
   #gameData;
   #images;
   #session = null;
   #outlet = null;
   #destroyed = false;
+  #readOnly = false;
+  #campaign = null;
+  #unwatch = null;
 
-  constructor({ characters, gameData, images }) {
+  constructor({ characters, campaigns, gameData, images }) {
     this.#characters = characters;
+    this.#campaigns = campaigns;
     this.#gameData = gameData;
     this.#images = images;
   }
@@ -51,15 +59,32 @@ export class SheetPage {
       return;
     }
 
+    // Campanha da ficha: para o selo e para saber se sou o Mestre dela
+    if (character.campaignId && this.#campaigns.available) {
+      this.#campaign = await this.#campaigns.get(character.campaignId).catch(() => null);
+      if (this.#destroyed) return;
+    }
+    this.#readOnly = !canEditCharacter(character, { uid: this.#campaigns.uid, campaign: this.#campaign });
+
     this.#session = new EditSession(this.#characters, character, {
       onError: () => showToast('Não foi possível salvar a ficha.'),
       normalize: (c) => normalizeCharacter(c, this.#gameData),
     });
     this.#render();
+
+    // Tempo real: mudanças do Mestre/jogador em outro aparelho aparecem aqui
+    this.#unwatch = this.#characters.watch(id, (remote) => {
+      const before = JSON.stringify(this.#session.character);
+      this.#session.applyRemote(remote);
+      if (JSON.stringify(this.#session.character) !== before) this.#render();
+    });
   }
 
   unmount() {
     this.#destroyed = true;
+    this.#unwatch?.();
+    // Só leitura: nada a salvar (e evita gravar sem permissão)
+    if (this.#readOnly) return;
     this.#session?.dispose();
   }
 
@@ -77,7 +102,7 @@ export class SheetPage {
         this.#attributes(c),
         h('div', { class: 'coluna' },
           this.#status(c),
-          this.#rest(),
+          this.#readOnly ? null : this.#rest(),
           this.#equipment(c),
         ),
       ),
@@ -95,21 +120,34 @@ export class SheetPage {
       .filter(Boolean)
       .join(' · ');
 
+    const campaign = this.#campaign;
+    const mine = !c.ownerId || c.ownerId === this.#campaigns.uid;
+    const back = mine || !campaign
+      ? h('a', { class: 'botao botao--secundario', href: '#/' }, '← Fichas')
+      : h('a', { class: 'botao botao--secundario', href: `#/campanha/${campaign.id}` }, '← Campanha');
+
     return h('div', { class: 'cabecalho-pagina' },
       h('div', { class: 'identidade' },
-        portraitButton({
-          character: c,
-          onPick: (file) => this.#images.toPortrait(file),
-          onChange: (portrait) => this.#update({ portrait }),
-        }),
+        this.#readOnly
+          ? portrait(c, { size: 'medio' })
+          : portraitButton({
+              character: c,
+              onPick: (file) => this.#images.toPortrait(file),
+              onChange: (value) => this.#update({ portrait: value }),
+            }),
         h('div', {},
           h('h1', {}, c.name || 'Sem nome'),
           meta ? h('span', { class: 'ficha-item__meta' }, meta) : null,
+          h('div', { class: 'selos' },
+            campaign ? h('a', { class: 'selo', href: `#/campanha/${campaign.id}` }, `🎲 ${campaign.name}`) : null,
+            this.#readOnly ? h('span', { class: 'selo selo--aviso' }, 'Só leitura') : null,
+            !this.#readOnly && !mine ? h('span', { class: 'selo' }, 'Editando como Mestre') : null,
+          ),
         ),
       ),
       h('div', { class: 'grupo-botoes' },
-        h('a', { class: 'botao botao--secundario', href: '#/' }, '← Fichas'),
-        h('a', { class: 'botao', href: `#/editar/${c.id}` }, 'Editar'),
+        back,
+        this.#readOnly ? null : h('a', { class: 'botao', href: `#/editar/${c.id}` }, 'Editar'),
       ),
     );
   }
@@ -146,12 +184,14 @@ export class SheetPage {
     const pool = (key, label) => poolCounter({
       label,
       pool: c[key],
+      readOnly: this.#readOnly,
       onChange: (current) => this.#update((s) => ({ [key]: { ...s[key], current } })),
     });
 
     const vulnerable = h('button', {
       class: 'botao botao--secundario alternar',
       type: 'button',
+      disabled: this.#readOnly,
       'aria-pressed': String(c.vulnerable),
       onclick: () => {
         const next = vulnerable.getAttribute('aria-pressed') !== 'true';
@@ -175,6 +215,7 @@ export class SheetPage {
             itemLabel: 'Esperança',
             slots: HOPE_MAX,
             marked: c.hope,
+            readOnly: this.#readOnly,
             onChange: (hope) => this.#update({ hope }),
           }),
         ),
@@ -320,6 +361,7 @@ export class SheetPage {
         slots,
         marked,
         shape: 'escudo',
+        readOnly: this.#readOnly,
         onChange: (next) => {
           if (brokenEl) brokenEl.hidden = next < slots;
           this.#update((s) => ({ [key]: { ...s[key], marked: next } }));

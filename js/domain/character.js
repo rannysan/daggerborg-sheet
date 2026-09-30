@@ -33,6 +33,10 @@ export function createCharacter(overrides = {}) {
     createdAt: now,
     updatedAt: now,
 
+    // Nuvem: dono (uid) e campanha (id) — null no modo local / sem campanha
+    ownerId: null,
+    campaignId: null,
+
     player: '',
     name: '',
     pronouns: '',

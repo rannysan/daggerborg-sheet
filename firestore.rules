@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// Regras do Firestore do Dagger Sheet.
+// Cole no console: Firebase → Firestore Database → Regras → Publicar.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+
+    function campaignPath(id) { return /databases/$(db)/documents/campaigns/$(id); }
+    function isMember(id) {
+      return id != null && exists(campaignPath(id)) && me() in get(campaignPath(id)).data.memberIds;
+    }
+    function isMasterOf(id) {
+      return id != null && exists(campaignPath(id)) && get(campaignPath(id)).data.ownerId == me();
+    }
+
+    // Ler ficha: dono, ou quem participa da campanha dela.
+    // Documento inexistente (resource == null) pode ser "lido": a resposta é só
+    // "não existe". Sem isso, ler uma ficha recém-criada antes de o servidor
+    // gravá-la (ou um retrato que não existe) dava erro de permissão.
+    function canRead(res) {
+      return res == null || res.data.ownerId == me() || isMember(res.data.campaignId);
+    }
+
+    // Editar ficha: o dono não muda. O dono pode vincular (a uma campanha em que
+    // está) e desvincular; o Mestre da campanha edita e pode desvincular.
+    function canUpdate(before, after) {
+      return after.ownerId == before.ownerId && (
+        (before.ownerId == me() && (after.campaignId == null || isMember(after.campaignId)))
+        || (isMasterOf(before.campaignId)
+            && (after.campaignId == before.campaignId || after.campaignId == null))
+      );
+    }
+
+    // ---------- Perfil (apelido) ----------
+    match /users/{uid} {
+      allow read, write: if signedIn() && me() == uid;
+
+      // Caminho antigo das fichas: só para a migração automática (ler e apagar)
+      match /characters/{id} {
+        allow read, delete: if signedIn() && me() == uid;
+      }
+    }
+
+    // ---------- Campanhas ----------
+    match /campaigns/{id} {
+      // Qualquer pessoa logada abre um convite pelo link (o id é aleatório)
+      allow get: if signedIn();
+      allow list: if signedIn() && me() in resource.data.memberIds;
+
+      allow create: if signedIn()
+        && request.resource.data.ownerId == me()
+        && request.resource.data.memberIds == [me()]
+        && request.resource.data.members.keys().hasOnly([me()]);
+
+      allow update: if signedIn() && (
+        // Mestre: edita tudo, menos quem é o dono
+        (resource.data.ownerId == me() && request.resource.data.ownerId == resource.data.ownerId)
+        // Membro: só entra, sai ou troca o próprio nome na lista
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members'])
+            && request.resource.data.memberIds.toSet().difference(resource.data.memberIds.toSet())
+                 .union(resource.data.memberIds.toSet().difference(request.resource.data.memberIds.toSet()))
+                 .hasOnly([me()])
+            && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()]))
+      );
+
+      allow delete: if signedIn() && resource.data.ownerId == me();
+    }
+
+    // ---------- Fichas ----------
+    match /characters/{id} {
+      allow read: if signedIn() && canRead(resource);
+      allow create: if signedIn()
+        && request.resource.data.id == id
+        && request.resource.data.ownerId == me()
+        && (request.resource.data.campaignId == null || isMember(request.resource.data.campaignId));
+      allow update: if signedIn()
+        && request.resource.data.id == id
+        && canUpdate(resource.data, request.resource.data);
+      allow delete: if signedIn() && resource.data.ownerId == me();
+    }
+
+    // ---------- Retratos (separados da ficha para economizar dados no tempo real) ----------
+    // Seguem a ficha de mesmo id: quem edita a ficha edita o retrato.
+    match /portraits/{id} {
+      function character() { return get(/databases/$(db)/documents/characters/$(id)).data; }
+
+      allow read: if signedIn() && canRead(resource);
+      allow create, update: if signedIn()
+        && exists(/databases/$(db)/documents/characters/$(id))
+        && (character().ownerId == me() || isMasterOf(character().campaignId))
+        && request.resource.data.ownerId == character().ownerId
+        && request.resource.data.campaignId == character().campaignId;
+      allow delete: if signedIn()
+        && (resource.data.ownerId == me() || isMasterOf(resource.data.campaignId));
+    }
+  }
+}

@@ -4,9 +4,11 @@ import { emptyState } from '../components/emptyState.js';
 import { EditSession } from '../../services/EditSession.js';
 import { hasErrors } from '../../domain/validation.js';
 import { normalizeCharacter } from '../../domain/normalize.js';
+import { canEditCharacter } from '../../domain/campaign.js';
 
 export class WizardPage {
   #characters;
+  #campaigns;
   #router;
   #gameData;
   #steps;
@@ -17,7 +19,8 @@ export class WizardPage {
   #destroyed = false;
   #showErrorsOnRender = false; // ao concluir com etapa pendente, já abre ela com os erros
 
-  constructor({ characters, router, gameData, steps, images }) {
+  constructor({ characters, campaigns, router, gameData, steps, images }) {
+    this.#campaigns = campaigns;
     this.#images = images;
     this.#characters = characters;
     this.#router = router;
@@ -33,6 +36,18 @@ export class WizardPage {
     if (!character) {
       outlet.append(emptyState('Ficha não encontrada.', { href: '#/', label: 'Voltar para as fichas' }));
       return;
+    }
+
+    // Ficha de outra pessoa: só o Mestre da campanha dela pode editar
+    if (character.ownerId && character.ownerId !== this.#campaigns.uid) {
+      const campaign = character.campaignId && this.#campaigns.available
+        ? await this.#campaigns.get(character.campaignId).catch(() => null)
+        : null;
+      if (this.#destroyed) return;
+      if (!canEditCharacter(character, { uid: this.#campaigns.uid, campaign })) {
+        outlet.append(emptyState('Você não pode editar esta ficha.', { href: `#/ficha/${id}`, label: 'Ver ficha' }));
+        return;
+      }
     }
 
     const index = this.#indexOf(step);

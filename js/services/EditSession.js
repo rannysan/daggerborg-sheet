@@ -5,6 +5,8 @@ import { debounce } from '../core/utils.js';
 
 const AUTOSAVE_DELAY_MS = 500;
 
+const sameValue = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
+
 export class EditSession {
   #characters;
   #store;
@@ -12,6 +14,7 @@ export class EditSession {
   #unsubscribe;
   #onError;
   #normalize;
+  #dirty = new Set(); // campos alterados aqui e ainda não salvos
 
   /**
    * @param {import('./CharacterService.js').CharacterService} characters
@@ -44,8 +47,21 @@ export class EditSession {
   update(patch) {
     this.#store.update((current) => {
       const changes = typeof patch === 'function' ? patch(current) : patch;
-      return this.#normalize({ ...current, ...changes });
+      const next = this.#normalize({ ...current, ...changes });
+      for (const key of Object.keys(next)) {
+        if (!sameValue(next[key], current[key])) this.#dirty.add(key);
+      }
+      return next;
     });
+  }
+
+  // Alteração que veio de outra pessoa/aparelho (tempo real): aplica sem salvar de
+  // novo, preservando os campos mexidos aqui que ainda não foram salvos.
+  applyRemote(remote) {
+    const local = this.character;
+    const merged = { ...remote };
+    for (const key of this.#dirty) merged[key] = local[key];
+    this.#store.set(this.#normalize(merged), { silent: true });
   }
 
   // Salva agora o que estiver pendente
@@ -65,6 +81,7 @@ export class EditSession {
   };
 
   async #save() {
+    this.#dirty.clear();
     try {
       await this.#characters.save(this.character);
     } catch (erro) {

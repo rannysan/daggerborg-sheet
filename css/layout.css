@@ -94,3 +94,21 @@
   .ficha-grade { grid-template-columns: minmax(220px, 1fr) 2fr; }
   .ficha-grade .stats { grid-template-columns: 1fr; }
 }
+
+/* ---------- Abas do cabeçalho (Fichas | Campanhas) ---------- */
+.topo { flex-wrap: wrap; }
+.abas { display: flex; gap: 4px; }
+.abas__item {
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.abas__item[aria-current="page"] { background: rgba(255, 255, 255, 0.2); color: #fff; }
+/* No celular as abas descem para uma linha própria, ocupando a largura toda */
+@media (max-width: 560px) {
+  .abas { order: 3; width: 100%; }
+  .abas__item { flex: 1; text-align: center; }
+}

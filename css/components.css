@@ -424,3 +424,52 @@
   .dado--rolando,
   .rolagem__total--revelado { animation: none; }
 }
+
+/* ---------- Botão de conta (cabeçalho) ---------- */
+.conta { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+
+/* ---------- Selos (campanha, só leitura...) ---------- */
+.selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.selo {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--cor-principal-suave);
+  color: var(--cor-principal);
+  text-decoration: none;
+}
+.selo--aviso { background: var(--cor-perigo); color: #fff; }
+
+/* ---------- Campanha ---------- */
+.campanha__descricao { color: var(--texto-suave); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.membros { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.membros li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.membros li .botao { margin-left: auto; }
+.lista-fichas--campanha { margin-top: 12px; }
+.ficha-item__nome { margin: 0; font-size: 1.05rem; }
+.mini-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 0.85rem; color: var(--texto-suave); }
+.mini-stat strong { color: var(--texto); font-size: 0.95rem; }
+.convite { max-width: 560px; }
+.convite h1 { margin-bottom: 4px; }
+
+/* Link de convite para copiar à mão */
+.campo-link {
+  font: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+/* Formulário de uma coluna (dentro de diálogos) */
+.grade-formulario--simples { grid-template-columns: 1fr !important; }
+
+/* Botão extra do diálogo (ex.: Sair da conta) fica à esquerda */
+.dialogo__extra { margin-right: auto; }
+
+/* ---------- Carregando (página esperando dados) ---------- */
+.carregando { margin: 0; padding: 32px 16px; text-align: center; color: var(--texto-suave); }

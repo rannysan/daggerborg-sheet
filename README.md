@@ -74,3 +74,30 @@ O celular precisa de **HTTPS** para instalar. Opções:
 ## Ao atualizar o site
 
 Troque a versão em `sw.js` (`dagger-sheet-v1` → `dagger-sheet-v2`) para o navegador pegar os arquivos novos.
+
+## Nuvem (Firebase) — opcional
+
+Sem login, as fichas ficam só no aparelho (IndexedDB). Com **Entrar** (conta Google),
+elas ficam no Firestore e sincronizam entre aparelhos, inclusive offline (o Firestore
+envia quando a conexão volta). Com login também dá para usar **campanhas**.
+
+```
+users/{uid}        → { nickname }                                perfil (apelido)
+campaigns/{id}     → { name, description, ownerId, memberIds, members }
+characters/{id}    → ficha (sem o retrato) + ownerId + campaignId
+portraits/{id}     → { ownerId, campaignId, portrait }           retrato separado
+```
+
+- **Campanhas:** quem cria é o Mestre e compartilha o link de convite (`#/entrar/{id}`);
+  quem tem o link e está logado entra. Cada ficha fica em no máximo uma campanha.
+  Todos os membros veem as fichas da campanha (só leitura); edita o dono e o Mestre.
+- **Tempo real:** a tela da campanha e a ficha aberta se atualizam sozinhas. Cada gravação
+  envia só os campos alterados, então Mestre e jogador podem mexer ao mesmo tempo.
+- O retrato fica num documento à parte porque o Firestore reenvia o documento inteiro a
+  cada mudança; assim o tempo real trafega ~3 KB por atualização em vez de ~50 KB.
+- Projeto: `daggerborg-sheets` (plano Spark, gratuito). Config em `js/infra/firebase/config.js`
+  — esses valores **não são secretos**; a proteção são as regras.
+- **Regras de segurança:** ficam em [firestore.rules](firestore.rules). Ao mudar, cole o
+  conteúdo em Firebase → Firestore Database → Regras → Publicar.
+- O SDK é carregado da CDN só para quem entra na conta (versão fixa em `config.js`).
+- Domínios autorizados no Authentication: `localhost` e `rannysan.github.io`.

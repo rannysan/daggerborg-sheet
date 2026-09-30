@@ -15,6 +15,7 @@ export function counter({
   format = String,
   canIncrease = () => true,
   onChange,
+  readOnly = false,
 }) {
   let current = value;
 
@@ -30,8 +31,8 @@ export function counter({
 
   function refresh() {
     valueEl.textContent = format(current);
-    minus.disabled = current <= min;
-    plus.disabled = current >= max || !canIncrease(current);
+    minus.disabled = readOnly || current <= min;
+    plus.disabled = readOnly || current >= max || !canIncrease(current);
   }
 
   function change(next) {
@@ -50,7 +51,7 @@ export function counter({
 }
 
 // Atalho para recursos { current, max }: mostra "atual / máximo"
-export function poolCounter({ label, pool, onChange }) {
+export function poolCounter({ label, pool, onChange, readOnly = false }) {
   const max = Number.isInteger(pool.max) ? pool.max : pool.current;
   return counter({
     label,
@@ -58,5 +59,6 @@ export function poolCounter({ label, pool, onChange }) {
     max,
     format: (v) => `${v} / ${max}`,
     onChange,
+    readOnly,
   }).element;
 }

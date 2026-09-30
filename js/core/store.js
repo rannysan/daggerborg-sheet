@@ -11,9 +11,11 @@ export class Store {
     return this.#state;
   }
 
-  set(nextState) {
+  // silent: troca o estado sem avisar os inscritos (ex.: dado que veio do servidor
+  // e não deve disparar um novo salvamento)
+  set(nextState, { silent = false } = {}) {
     this.#state = nextState;
-    this.#listeners.forEach((listener) => listener(nextState));
+    if (!silent) this.#listeners.forEach((listener) => listener(nextState));
   }
 
   // Mescla só os campos informados (atualização rasa).

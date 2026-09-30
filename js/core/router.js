@@ -5,6 +5,8 @@
 //   unmount()              → opcional: limpa inscrições, salva pendências
 //   update(params)         → opcional: reaproveita a página na mesma rota;
 //                            retorna true se tratou a mudança
+const LOADING_DELAY_MS = 250;
+
 export class Router {
   #container;
   #routes = [];
@@ -28,6 +30,15 @@ export class Router {
   start() {
     window.addEventListener('hashchange', () => this.#resolve());
     this.#resolve();
+  }
+
+  // Desmonta a página atual (que salva pendências), roda `between` e monta de novo.
+  // Ex.: trocar o armazenamento ao entrar/sair da conta.
+  async reload(between) {
+    this.#current?.page.unmount?.();
+    this.#current = null;
+    await between?.();
+    await this.#resolve();
   }
 
   navigate(path, { replace = false } = {}) {
@@ -77,11 +88,26 @@ export class Router {
     const page = match.route.factory();
     this.#current = { route: match.route, page };
 
+    // Página que demora (ex.: esperando a nuvem): mostra "Carregando…" em vez de
+    // tela em branco. Só aparece depois de um instante, para não piscar.
+    const loading = document.createElement('p');
+    loading.className = 'carregando';
+    loading.setAttribute('role', 'status');
+    loading.textContent = 'Carregando…';
+    const loadingTimer = setTimeout(() => {
+      if (outlet.isConnected && !outlet.hasChildNodes()) outlet.before(loading);
+    }, LOADING_DELAY_MS);
+
     try {
       await page.mount(outlet, match.params);
     } catch (erro) {
       console.error('[Router] Erro ao abrir a página:', erro);
-      outlet.textContent = 'Algo deu errado ao abrir esta página.';
+      outlet.textContent = navigator.onLine
+        ? 'Algo deu errado ao abrir esta página.'
+        : 'Sem conexão: não foi possível abrir esta página.';
+    } finally {
+      clearTimeout(loadingTimer);
+      loading.remove();
     }
   }
 }
