@@ -69,6 +69,12 @@ export function mountAccountButton(container, { auth, profile, onSignIn, onSignO
         h('p', { class: 'campo__dica' }, `Conta Google: ${email}`),
         h('p', { class: 'campo__dica' },
           'Suas fichas ficam salvas na nuvem. Ao sair, este aparelho volta a mostrar só as fichas salvas nele.'),
+        h('p', { class: 'campo__dica' },
+          'A nuvem é protegida pelo reCAPTCHA do Google, que analisa o uso do site para barrar robôs. ',
+          h('a', { href: 'https://policies.google.com/privacy', target: '_blank', rel: 'noopener noreferrer' }, 'Privacidade'),
+          ' e ',
+          h('a', { href: 'https://policies.google.com/terms', target: '_blank', rel: 'noopener noreferrer' }, 'Termos'),
+          '.'),
       ],
       onConfirm: async () => {
         await profile.save(nickname);

@@ -112,3 +112,18 @@
   .abas { order: 3; width: 100%; }
   .abas__item { flex: 1; text-align: center; }
 }
+
+/* ---------- Rodapé (aviso do reCAPTCHA) ---------- */
+.rodape {
+  padding: 8px var(--espaco) max(12px, env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+.rodape a { color: inherit; }
+/* No wizard, a barra inferior fixa cobriria o rodapé */
+body:has(.pagina--com-barra) .rodape { padding-bottom: calc(var(--altura-barra-inferior) + 12px + env(safe-area-inset-bottom)); }
+
+/* Selo flutuante do reCAPTCHA: escondido (ficaria sobre o popup de dados).
+   O aviso equivalente está no rodapé e no perfil, como o Google permite. */
+.grecaptcha-badge { visibility: hidden; }

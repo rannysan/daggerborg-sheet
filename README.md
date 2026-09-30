@@ -101,3 +101,21 @@ portraits/{id}     → { ownerId, campaignId, portrait }           retrato separ
   conteúdo em Firebase → Firestore Database → Regras → Publicar.
 - O SDK é carregado da CDN só para quem entra na conta (versão fixa em `config.js`).
 - Domínios autorizados no Authentication: `localhost` e `rannysan.github.io`.
+
+## Segurança
+
+- **Chaves públicas de propósito:** `js/infra/firebase/config.js` tem a `apiKey` web do
+  Firebase e a chave do site do reCAPTCHA. Num site estático elas vão para o navegador de
+  todo visitante, então não são segredos — o GitHub avisa só por causa do formato
+  (`.github/secret_scanning.yml` ignora esse arquivo). A **chave secreta** do reCAPTCHA fica
+  apenas no console do Firebase e nunca deve entrar no código.
+- **O que protege os dados:**
+  1. Regras do Firestore ([firestore.rules](firestore.rules)): quem lê/edita o quê, e formato
+     e tamanho dos dados.
+  2. Restrição da chave de API no Google Cloud: só aceita chamadas de `rannysan.github.io`,
+     `localhost:5500` e `daggerborg-sheets.firebaseapp.com`, e só para as APIs usadas.
+  3. **App Check (reCAPTCHA v3):** o Firebase só aceita requisições vindas deste site num
+     navegador de verdade. Após alguns dias em monitoramento, ligar o **Enforce** em
+     Firebase → App Check → APIs → Cloud Firestore.
+- **CSP** no `index.html`: scripts só do próprio site, do Firebase e do reCAPTCHA.
+- Plano **Spark** (sem cartão): nenhum abuso gera cobrança; no pior caso a cota do dia acaba.

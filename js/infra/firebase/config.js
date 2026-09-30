@@ -11,3 +11,9 @@ export const firebaseConfig = {
 
 // SDK carregado da CDN oficial (sem build). Versão fixa: ao atualizar, troque aqui.
 export const FIREBASE_SDK_URL = 'https://www.gstatic.com/firebasejs/12.19.0';
+
+// App Check (reCAPTCHA v3): prova ao Firebase que a requisição vem deste site,
+// aberto num navegador de verdade — barra scripts usando o projeto por fora.
+// Esta é a chave do SITE (pública). A chave SECRETA fica só no console do Firebase.
+// Domínios liberados na chave: rannysan.github.io e localhost.
+export const RECAPTCHA_SITE_KEY = '6Le9ldYtAAAAAEZNd2DdqbM5eTrelfEQ9Yx75SC0';

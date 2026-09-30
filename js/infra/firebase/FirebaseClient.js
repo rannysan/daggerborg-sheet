@@ -1,13 +1,15 @@
 // Carrega o SDK do Firebase sob demanda (só quem usa a nuvem baixa) e inicializa
-// app, Auth e Firestore uma única vez.
+// app, App Check, Auth e Firestore uma única vez.
 export class FirebaseClient {
   #config;
   #sdkUrl;
+  #recaptchaSiteKey;
   #loading = null;
 
-  constructor(config, sdkUrl) {
+  constructor(config, sdkUrl, { recaptchaSiteKey = null } = {}) {
     this.#config = config;
     this.#sdkUrl = sdkUrl;
+    this.#recaptchaSiteKey = recaptchaSiteKey;
   }
 
   // → { app, auth, db, appApi, authApi, fs }
@@ -26,6 +28,7 @@ export class FirebaseClient {
     ]);
 
     const app = appApi.initializeApp(this.#config);
+    await this.#initAppCheck(app);
     const auth = authApi.getAuth(app);
     // Cache persistente: a ficha abre e salva mesmo sem internet;
     // o Firestore envia as alterações quando a conexão voltar
@@ -34,6 +37,24 @@ export class FirebaseClient {
     });
 
     return { app, auth, db, appApi, authApi, fs };
+  }
+
+  // App Check precisa ser iniciado ANTES de Auth/Firestore para que as
+  // requisições já saiam com o atestado. Falhar aqui (ex.: bloqueador de anúncios
+  // barrando o reCAPTCHA) não impede o app de abrir: enquanto o Firebase estiver
+  // em modo de monitoramento, tudo segue funcionando; com o Enforce ligado, só a
+  // nuvem é recusada para essa pessoa (o modo local continua).
+  async #initAppCheck(app) {
+    if (!this.#recaptchaSiteKey) return;
+    try {
+      const appCheck = await import(`${this.#sdkUrl}/firebase-app-check.js`);
+      appCheck.initializeAppCheck(app, {
+        provider: new appCheck.ReCaptchaV3Provider(this.#recaptchaSiteKey),
+        isTokenAutoRefreshEnabled: true, // renova o atestado sozinho em segundo plano
+      });
+    } catch (erro) {
+      console.warn('[App Check] Não foi possível iniciar o reCAPTCHA:', erro);
+    }
   }
 
   // Espera as alterações pendentes chegarem ao servidor. Lança erro se não

@@ -13,7 +13,7 @@ import { AuthService } from './infra/firebase/AuthService.js';
 import { CampaignRepository } from './infra/firebase/CampaignRepository.js';
 import { ProfileRepository } from './infra/firebase/ProfileRepository.js';
 import { migrateLegacyCharacters } from './infra/firebase/legacyMigration.js';
-import { firebaseConfig, FIREBASE_SDK_URL } from './infra/firebase/config.js';
+import { firebaseConfig, FIREBASE_SDK_URL, RECAPTCHA_SITE_KEY } from './infra/firebase/config.js';
 import { FileService } from './infra/FileService.js';
 import { ImageService } from './infra/ImageService.js';
 import { GameDataLoader } from './infra/GameDataLoader.js';
@@ -43,7 +43,7 @@ try {
   // ---------- Armazenamento: local por padrão, nuvem com login ----------
   const local = new IndexedDbRepository();
   const repository = new SwitchableRepository(local);
-  const firebase = new FirebaseClient(firebaseConfig, FIREBASE_SDK_URL);
+  const firebase = new FirebaseClient(firebaseConfig, FIREBASE_SDK_URL, { recaptchaSiteKey: RECAPTCHA_SITE_KEY });
   const auth = new AuthService(firebase);
   const profile = new ProfileService(new ProfileRepository(firebase), auth);
 

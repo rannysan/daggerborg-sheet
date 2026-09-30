@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <!-- Segurança (CSP): o navegador só carrega scripts deste site e do Firebase
-       (gstatic/apis.google.com) e só conversa com os serviços do Google. Se um dia
+       (gstatic/apis.google.com), o reCAPTCHA (www.google.com) e só conversa com os
+       serviços do Google. Se um dia
        surgir uma falha de XSS, script de outro site não roda nem envia dados.
        Ao adicionar um serviço externo, libere o domínio aqui. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' https://www.gstatic.com https://apis.google.com;
-    connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com;
-    frame-src https://daggerborg-sheets.firebaseapp.com https://accounts.google.com;
+    script-src 'self' https://www.gstatic.com https://apis.google.com https://www.google.com;
+    connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com https://www.google.com;
+    frame-src https://daggerborg-sheets.firebaseapp.com https://accounts.google.com https://www.google.com;
     img-src 'self' data: blob:;
     style-src 'self';
     font-src 'self';
@@ -55,6 +56,15 @@
 
   <!-- As páginas são desenhadas aqui pelo router -->
   <main id="app" class="conteudo" aria-live="polite"></main>
+
+  <!-- Aviso exigido pelo Google ao esconder o selo flutuante do reCAPTCHA -->
+  <footer class="rodape">
+    <small>
+      Login e nuvem protegidos pelo reCAPTCHA do Google:
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacidade</a> e
+      <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Termos</a>.
+    </small>
+  </footer>
 
   <noscript>Este app precisa de JavaScript ativado.</noscript>
 
