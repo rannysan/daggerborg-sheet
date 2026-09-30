@@ -8,10 +8,10 @@ export const ATTRIBUTES = Object.freeze([
   { id: 'vigor', label: 'Vigor', hint: 'Suportar Toxinas, Frio, Calor e Queda' },
 ]);
 
-// Todos os atributos começam em -3; o jogador distribui 12 pontos (máximo +3)
+// Todos os atributos começam em -3; o jogador distribui 13 pontos (máximo +3)
 export const ATTRIBUTE_MIN = -3;
 export const ATTRIBUTE_MAX = 3;
-export const ATTRIBUTE_POINTS = 12;
+export const ATTRIBUTE_POINTS = 13;
 
 // Custos das habilidades de classe
 export const COSTS = Object.freeze({
@@ -26,13 +26,13 @@ export const TIER_START = 1;
 // Duas experiências: uma +1 e uma +2
 export const EXPERIENCE_BONUSES = Object.freeze([1, 2]);
 
-// Esperança: parte com 2, máximo 3
+// Esperança: parte com 2, máximo 4
 export const HOPE_START = 2;
-export const HOPE_MAX = 3;
+export const HOPE_MAX = 4;
 
-// Suprimentos: parte com 2; espaço da mochila começa em 2
+// Suprimentos: parte com 2; espaço da mochila começa em 3
 export const SUPPLIES_START = 2;
-export const BACKPACK_START = 2;
+export const BACKPACK_START = 3;
 
 // Fissuras que armaduras e escudos aguentam vêm de data/equipment.json
 

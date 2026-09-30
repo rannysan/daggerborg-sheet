@@ -7,7 +7,7 @@ import {
 
 // Aumente quando mudar o formato de campos existentes e crie a migração em
 // migrations.js. Campos NOVOS não precisam: a migração completa com o padrão.
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export function newId() {
   if (crypto.randomUUID) return crypto.randomUUID();

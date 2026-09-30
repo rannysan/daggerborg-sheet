@@ -3,7 +3,7 @@
     "id": "adepto",
     "name": "Adepto",
     "requirement": { "attribute": "presence", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 2, "min": 1, "perTier": 1 },
+    "hp": { "attribute": "vigor", "base": 3, "min": 1, "perTier": 0 },
     "stress": { "attribute": "vigor", "base": 5, "min": 1, "perTier": 0 },
     "abilities": [
       {
@@ -31,7 +31,7 @@
     "id": "especialista",
     "name": "Especialista",
     "requirement": { "attribute": "agility", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 3, "min": 1, "perTier": 2 },
+    "hp": { "attribute": "vigor", "base": 5, "min": 1, "perTier": 0 },
     "stress": { "attribute": "vigor", "base": 3, "min": 1, "perTier": 0 },
     "abilities": [
       {
@@ -59,7 +59,7 @@
     "id": "vanguarda",
     "name": "Vanguarda",
     "requirement": { "attribute": "strength", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 4, "min": 1, "perTier": 2 },
+    "hp": { "attribute": "vigor", "base": 6, "min": 1, "perTier": 0 },
     "stress": { "attribute": "vigor", "base": 2, "min": 1, "perTier": 0 },
     "abilities": [
       {

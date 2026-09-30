@@ -54,6 +54,14 @@ const MIGRATIONS = {
       armor?.name && `Armadura (anotação antiga): ${armor.name}`,
     ].filter(Boolean).join('\n'),
   }),
+
+  // v5 → v6: a mochila passou a começar com 3 espaços. Quem estava no padrão
+  // antigo (2) ganha o espaço extra; quem tinha ajustado à mão fica como está.
+  5: ({ supplies, ...rest }) => ({
+    ...rest,
+    schemaVersion: 6,
+    ...(supplies ? { supplies: supplies.max === 2 ? { ...supplies, max: 3 } : supplies } : {}),
+  }),
 };
 
 export function migrate(raw) {
