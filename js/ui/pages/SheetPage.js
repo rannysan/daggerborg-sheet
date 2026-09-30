@@ -12,7 +12,6 @@ import { classAbilities } from '../components/classAbilities.js';
 import { portrait, portraitButton } from '../components/portrait.js';
 import { showDualityRoll, showRoll } from '../components/rollPopup.js';
 import { counter } from '../components/counter.js';
-import { checkboxField } from '../components/fields.js';
 import { rollCritical, rollDice } from '../../domain/dice.js';
 import {
   DUALITY_OUTCOMES, EDGE_MAX_SOURCES, EXPERIENCE_HOPE_COST, REACTION_NOTE, addExperience,
@@ -194,12 +193,10 @@ export class SheetPage {
     );
   }
 
-  // Antes de rolar: Experiências (1 Esperança cada) e fontes de Vantagem/Desvantagem
+  // Antes de rolar: fontes de Vantagem/Desvantagem
   #openRollOptions(attr, penalty) {
     const c = this.#session.character;
     const edge = { advantage: 0, disadvantage: c.vulnerable ? 1 : 0 };
-    const experiences = c.experiences.filter((e) => e.name.trim());
-    const chosen = new Set(); // índices das experiências marcadas
 
     const pick = (key, label) => counter({
       label,
@@ -209,21 +206,11 @@ export class SheetPage {
       onChange: (value) => { edge[key] = value; },
     }).element;
 
-    // Usar Experiência gasta Esperança: só quem pode editar a ficha
-    const experienceSection = this.#readOnly || !experiences.length ? null : h('div', { class: 'opcoes-teste' },
-      h('h3', { class: 'rotulo' }, `Experiências (${EXPERIENCE_HOPE_COST} Esperança cada · você tem ${c.hope})`),
-      experiences.map((experience, i) => checkboxField({
-        label: `${experience.name} (${formatModifier(experience.bonus)})`,
-        onChange: (checked) => (checked ? chosen.add(i) : chosen.delete(i)),
-      })),
-    );
-
     openDialog({
       title: `Teste de ${attr.label}`,
       confirmLabel: '🎲 Rolar',
       focusConfirm: true, // rolagem simples: clicar em Rolar e apertar Enter
       content: [
-        experienceSection,
         h('div', { class: 'opcoes-teste' },
           h('h3', { class: 'rotulo' }, 'Vantagem e Desvantagem'),
           h('p', { class: 'campo__dica' }, 'Cada fonte é 1d6 somado (Vantagem) ou subtraído (Desvantagem). '
@@ -234,30 +221,17 @@ export class SheetPage {
           h('div', { class: 'contadores' }, pick('advantage', 'Vantagem (+d6)'), pick('disadvantage', 'Desvantagem (−d6)')),
         ),
       ],
-      onConfirm: () => {
-        const used = [...chosen].sort().map((i) => experiences[i]);
-        const cost = used.length * EXPERIENCE_HOPE_COST;
-        if (cost > this.#session.character.hope) {
-          showToast(`Esperança insuficiente: precisa de ${cost}, você tem ${this.#session.character.hope}.`);
-          return false; // mantém o diálogo aberto para desmarcar
-        }
-        if (cost) {
-          this.#update((s) => ({ hope: s.hope - cost }));
-          this.#render();
-        }
-        this.#rollAttribute(attr, penalty, { edge, experiences: used });
-        return true;
-      },
+      onConfirm: () => this.#rollAttribute(attr, penalty, edge),
     });
   }
 
   // Teste de atributo: dualidade (Esperança x Medo) + atributo − penalidade da armadura,
-  // com Experiências (já pagas) e Vantagem/Desvantagem opcionais. O efeito do resultado
-  // (ganhar Esperança, crítico) vem como botão: numa Reação ele não se aplica.
-  #rollAttribute(attr, penalty, { edge = {}, experiences = [] } = {}) {
+  // com Vantagem/Desvantagem opcional. Depois da rolagem, o popup oferece as
+  // Experiências (1 Esperança cada, recalcula o resultado) e o efeito do resultado
+  // (ganhar Esperança, crítico) — como botões, porque numa Reação não se aplicam.
+  #rollAttribute(attr, penalty, edge = {}) {
     const c = this.#session.character;
     let result = rollAttributeTest(attributeTestModifier(c, attr.id, penalty), edge);
-    for (const experience of experiences) result = addExperience(result, experience);
 
     const messageFor = (r) => {
       const outcome = DUALITY_OUTCOMES[r.outcome];
@@ -285,13 +259,33 @@ export class SheetPage {
       });
     }
 
+    // Experiências, depois da rolagem: gasta 1 Esperança, soma o bônus e recalcula
+    if (!this.#readOnly) {
+      for (const experience of c.experiences.filter((e) => e.name.trim())) {
+        actions.push({
+          label: `Usar ${experience.name} (${formatModifier(experience.bonus)}) · ${EXPERIENCE_HOPE_COST} Esperança`,
+          secondary: true,
+          onClick: () => {
+            if (this.#session.character.hope < EXPERIENCE_HOPE_COST) {
+              showToast('Sem Esperança para usar a Experiência.');
+              return false;
+            }
+            this.#update((s) => ({ hope: s.hope - EXPERIENCE_HOPE_COST }));
+            result = addExperience(result, experience);
+            popup.update(result, messageFor(result));
+            this.#render();
+            return true;
+          },
+        });
+      }
+    }
+
     const base = c.attributes[attr.id];
     const parts = [`${attr.label} ${formatModifier(base)}`];
     if (penalty) parts.push(`armadura −${penalty}`);
     if (result.edge) parts.push(result.edge.value > 0 ? 'com Vantagem' : 'com Desvantagem');
-    if (experiences.length) parts.push(`com ${experiences.map((e) => e.name).join(' e ')}`);
 
-    showDualityRoll({
+    const popup = showDualityRoll({
       title: `Teste de ${attr.label}`,
       label: parts.join(', '),
       result,
