@@ -70,9 +70,15 @@ export function addExperience(result, experience) {
   });
 }
 
+// Bônus de habilidade de classe (ex.: Esquiva +1 / +1d6). detail: como saiu o valor.
+export function addBonus(result, { name, value, detail = null }) {
+  return recompute({ ...result, bonuses: [...(result.bonuses ?? []), { name, value, detail }] });
+}
+
 function recompute(result) {
   const experienceBonus = result.experiences.reduce((sum, e) => sum + e.bonus, 0);
-  const total = result.hope + result.fear + result.modifier + (result.edge?.value ?? 0) + experienceBonus;
+  const classBonus = (result.bonuses ?? []).reduce((sum, b) => sum + b.value, 0);
+  const total = result.hope + result.fear + result.modifier + (result.edge?.value ?? 0) + experienceBonus + classBonus;
   const success = result.critical || total >= result.target;
   return {
     ...result,

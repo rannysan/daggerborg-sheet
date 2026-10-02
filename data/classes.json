@@ -2,21 +2,38 @@
   {
     "id": "adepto",
     "name": "Adepto",
-    "requirement": { "attribute": "presence", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 3, "min": 1, "perTier": 0 },
-    "stress": { "attribute": "vigor", "base": 5, "min": 1, "perTier": 0 },
+    "requirement": {
+      "attribute": "presence",
+      "min": 1
+    },
+    "hp": {
+      "attribute": "vigor",
+      "base": 3,
+      "min": 1,
+      "perTier": 0
+    },
+    "stress": {
+      "attribute": "vigor",
+      "base": 5,
+      "min": 1,
+      "perTier": 0
+    },
     "abilities": [
       {
         "tier": 1,
         "name": "Penalidade",
-        "cost": ["hope"],
+        "cost": [
+          "hope"
+        ],
         "trigger": "ao causar ao menos 1 de dano em um ataque com Presença",
         "effect": "o alvo fica Vulnerável."
       },
       {
         "tier": 1,
         "name": "Expandir",
-        "cost": ["stress"],
+        "cost": [
+          "stress"
+        ],
         "trigger": "ao fazer um ataque com Presença",
         "effect": "esse ataque atinge 1d4+1 alvos adicionais dentro de uma área, mas causa metade do dano."
       }
@@ -24,27 +41,68 @@
     "passive": {
       "name": "Proteção Mágica",
       "effect": "RD 1 enquanto ativa. Quando um dano for reduzir sua Vida a 0 ou menos, reduz a 1 e a proteção dissipa.",
-      "activation": { "cost": ["hope", "hope", "hope"], "effect": "Recria a proteção." }
-    }
+      "activation": {
+        "cost": [
+          "hope",
+          "hope",
+          "hope"
+        ],
+        "effect": "Recria a proteção."
+      }
+    },
+    "rollActions": [
+      {
+        "id": "expandir",
+        "roll": "damage",
+        "weaponAttribute": "presence",
+        "name": "Expandir",
+        "label": "Expandir: +1d4+1 alvos, metade do dano",
+        "cost": [
+          "stress"
+        ],
+        "effect": {
+          "type": "area",
+          "extraTargets": "1d4+1"
+        }
+      }
+    ]
   },
   {
     "id": "especialista",
     "name": "Especialista",
-    "requirement": { "attribute": "agility", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 5, "min": 1, "perTier": 0 },
-    "stress": { "attribute": "vigor", "base": 3, "min": 1, "perTier": 0 },
+    "requirement": {
+      "attribute": "agility",
+      "min": 1
+    },
+    "hp": {
+      "attribute": "vigor",
+      "base": 5,
+      "min": 1,
+      "perTier": 0
+    },
+    "stress": {
+      "attribute": "vigor",
+      "base": 3,
+      "min": 1,
+      "perTier": 0
+    },
     "abilities": [
       {
         "tier": 1,
         "name": "Movimento Ardiloso",
-        "cost": ["hope"],
+        "cost": [
+          "hope"
+        ],
         "trigger": "",
         "effect": "pode se mover para qualquer lugar do campo de batalha sem necessidade de qualquer teste."
       },
       {
         "tier": 1,
         "name": "Esconder",
-        "cost": ["stress", "action"],
+        "cost": [
+          "stress",
+          "action"
+        ],
         "trigger": "e teste de Agilidade",
         "effect": "se esconde em algum lugar do ambiente. Enquanto escondido não pode ser alvo de ataques. Atacando escondido, ataca com vantagem, causa 1d6 de dano extra e após o ataque não está mais escondido."
       }
@@ -52,27 +110,91 @@
     "passive": {
       "name": "Esquiva",
       "effect": "+1 em todo teste de Agilidade para se defender.",
-      "activation": { "cost": ["hope", "hope", "hope"], "effect": "Soma 1d6 na rolagem de uma defesa." }
-    }
+      "activation": {
+        "cost": [
+          "hope",
+          "hope",
+          "hope"
+        ],
+        "effect": "Soma 1d6 na rolagem de uma defesa."
+      }
+    },
+    "rollActions": [
+      {
+        "id": "esquiva",
+        "roll": "attribute",
+        "attribute": "agility",
+        "name": "Esquiva",
+        "label": "Esquiva +1 (se for defesa)",
+        "effect": {
+          "type": "flat",
+          "value": 1
+        }
+      },
+      {
+        "id": "esquiva-d6",
+        "roll": "attribute",
+        "attribute": "agility",
+        "name": "Esquiva",
+        "label": "Esquiva +1d6",
+        "cost": [
+          "hope",
+          "hope",
+          "hope"
+        ],
+        "effect": {
+          "type": "dice",
+          "dice": "1d6"
+        }
+      },
+      {
+        "id": "escondido",
+        "roll": "damage",
+        "name": "Escondido",
+        "label": "Atacando escondido +1d6",
+        "effect": {
+          "type": "dice",
+          "dice": "1d6",
+          "maximizeOnCritical": true
+        }
+      }
+    ]
   },
   {
     "id": "vanguarda",
     "name": "Vanguarda",
-    "requirement": { "attribute": "strength", "min": 1 },
-    "hp": { "attribute": "vigor", "base": 6, "min": 1, "perTier": 0 },
-    "stress": { "attribute": "vigor", "base": 2, "min": 1, "perTier": 0 },
+    "requirement": {
+      "attribute": "strength",
+      "min": 1
+    },
+    "hp": {
+      "attribute": "vigor",
+      "base": 6,
+      "min": 1,
+      "perTier": 0
+    },
+    "stress": {
+      "attribute": "vigor",
+      "base": 2,
+      "min": 1,
+      "perTier": 0
+    },
     "abilities": [
       {
         "tier": 1,
         "name": "Ataque Poderoso",
-        "cost": ["hope"],
+        "cost": [
+          "hope"
+        ],
         "trigger": "quando rolar o dano de um ataque com Força",
         "effect": "soma Força na rolagem."
       },
       {
         "tier": 1,
         "name": "Trespassar",
-        "cost": ["stress"],
+        "cost": [
+          "stress"
+        ],
         "trigger": "quando um ataque acertar o alvo",
         "effect": "faz um ataque em outro alvo no alcance como ação livre."
       }
@@ -80,8 +202,33 @@
     "passive": {
       "name": "Treinamento com Armadura",
       "effect": "Reduz a penalidade pelo uso de armadura em 1.",
-      "modifiers": { "armorPenaltyReduction": 1 },
-      "activation": { "cost": ["hope", "hope", "hope"], "effect": "Remove duas fissuras da armadura equipada." }
-    }
+      "modifiers": {
+        "armorPenaltyReduction": 1
+      },
+      "activation": {
+        "cost": [
+          "hope",
+          "hope",
+          "hope"
+        ],
+        "effect": "Remove duas fissuras da armadura equipada."
+      }
+    },
+    "rollActions": [
+      {
+        "id": "ataque-poderoso",
+        "roll": "damage",
+        "weaponAttribute": "strength",
+        "name": "Ataque Poderoso",
+        "label": "Ataque Poderoso: +Força",
+        "cost": [
+          "hope"
+        ],
+        "effect": {
+          "type": "attribute",
+          "attribute": "strength"
+        }
+      }
+    ]
   }
 ]

@@ -14,9 +14,10 @@ import { classAbilities, costIcon, costLegend } from '../components/classAbiliti
 import { portrait, portraitButton } from '../components/portrait.js';
 import { showDualityRoll, showRoll } from '../components/rollPopup.js';
 import { counter } from '../components/counter.js';
-import { rollCritical, rollDice } from '../../domain/dice.js';
+import { addDamageExtra, rollCritical, rollDice, withArea } from '../../domain/dice.js';
+import { canAfford, costText, payCost, resolveEffect, rollActionsFor } from '../../domain/classActions.js';
 import {
-  DUALITY_OUTCOMES, EDGE_MAX_SOURCES, EXPERIENCE_HOPE_COST, REACTION_NOTE, addExperience,
+  DUALITY_OUTCOMES, EDGE_MAX_SOURCES, EXPERIENCE_HOPE_COST, REACTION_NOTE, addBonus, addExperience,
   applyDualityEffect, attributeTestModifier, effectChangesCharacter, rollAttributeTest,
 } from '../../domain/duality.js';
 import { EditSession } from '../../services/EditSession.js';
@@ -27,7 +28,7 @@ import {
 } from '../../domain/rest.js';
 import { findClass, armorPenaltyReduction } from '../../domain/classes.js';
 import {
-  armorProfile, armorSummary, findArmor, findMaterial, findShield, findWeapon, formatRd,
+  armorProfile, armorSummary, findArmor, findMaterial, findShield, findWeapon, findWeaponGroup, formatRd,
   shieldSummary, weaponSummary,
 } from '../../domain/equipment.js';
 import { normalizeCharacter } from '../../domain/normalize.js';
@@ -324,6 +325,18 @@ export class SheetPage {
       });
     }
 
+    // Habilidades da classe neste teste (ex.: Esquiva do Especialista na Agilidade)
+    const cls = findClass(this.#gameData.classes, c.classId);
+    for (const action of rollActionsFor(cls, { roll: 'attribute', attribute: attr.id })) {
+      if (this.#readOnly && action.cost?.length) continue; // só leitura: nada que gaste recurso
+      actions.push(this.#classAction(action, {
+        onResolved: (effect) => {
+          result = addBonus(result, { name: action.name, value: effect.value, detail: effect.detail });
+          popup.update(result, messageFor(result));
+        },
+      }));
+    }
+
     // Experiências, depois da rolagem: gasta 1 Esperança, soma o bônus e recalcula
     if (!this.#readOnly) {
       for (const experience of c.experiences.filter((e) => e.name.trim())) {
@@ -560,11 +573,39 @@ export class SheetPage {
   // Botões de rolagem de dano da arma: normal e Sucesso Crítico (máximo + rolagem)
   #damageButtons(weapon) {
     const label = `${weapon.direct ? 'Dano direto' : 'Dano'} ${weapon.damage}`;
-    const roll = (critical) => showRoll({
-      title: weapon.name,
-      label: critical ? `Crítico · ${label}` : label,
-      result: critical ? rollCritical(weapon.damage) : rollDice(weapon.damage),
-    });
+    const weaponAttribute = findWeaponGroup(this.#gameData.equipment, weapon.group)?.attribute;
+
+    const roll = (critical) => {
+      let result = critical ? rollCritical(weapon.damage) : rollDice(weapon.damage);
+
+      // Habilidades da classe no dano (ex.: Escondido +1d6, Ataque Poderoso, Expandir)
+      const cls = findClass(this.#gameData.classes, this.#session.character.classId);
+      const actions = rollActionsFor(cls, { roll: 'damage', attribute: weaponAttribute })
+        .filter((action) => !(this.#readOnly && action.cost?.length))
+        .map((action) => this.#classAction(action, {
+          critical,
+          onResolved: (effect) => {
+            if (effect.area) {
+              const { extraTargets, detail } = effect.area;
+              result = withArea(result, { name: action.name, extraTargets, detail });
+              popup.update(result, {
+                title: `${action.name}: ${1 + extraTargets} alvos`,
+                text: `O alvo + ${extraTargets} adicionais (${detail}). Cada um recebe metade do dano.`,
+              });
+            } else {
+              result = addDamageExtra(result, { name: action.name, value: effect.value, detail: effect.detail });
+              popup.update(result, { title: `${action.name}: +${effect.value}`, text: effect.detail });
+            }
+          },
+        }));
+
+      const popup = showRoll({
+        title: weapon.name,
+        label: critical ? `Crítico · ${label}` : label,
+        result,
+        actions,
+      });
+    };
 
     return h('div', { class: 'grupo-botoes botoes-dano' },
       h('button', { class: 'botao botao--pequeno botao--dano', type: 'button', onclick: () => roll(false) },
@@ -576,6 +617,30 @@ export class SheetPage {
         onclick: () => roll(true),
       }, 'Crítico'),
     );
+  }
+
+  // Ação de classe como botão do popup: confere e paga o custo, resolve o efeito
+  // e entrega o resultado para quem chamou recalcular a rolagem.
+  #classAction(action, { critical = false, onResolved }) {
+    const cost = action.cost ?? [];
+    return {
+      label: cost.length ? `${action.label} · ${costText(cost)}` : action.label,
+      secondary: true,
+      onClick: () => {
+        const current = this.#session.character;
+        if (cost.length && !canAfford(current, cost)) {
+          showToast(`Sem ${costText(cost)} para usar ${action.name}.`);
+          return false; // o botão volta a ficar ativo
+        }
+        const effect = resolveEffect(action.effect, { character: current, critical });
+        if (cost.length) {
+          this.#update((s) => payCost(s, cost));
+          this.#render();
+        }
+        onResolved(effect);
+        return true;
+      },
+    };
   }
 
   #fissures({ title, key, slots, brokenLabel = null }) {

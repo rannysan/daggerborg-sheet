@@ -54,12 +54,33 @@ export function rollCritical(expression, random = cryptoRandomInt) {
   return { ...normal, bonus: max, critical: true, total: normal.total + max };
 }
 
-// Texto do cálculo, ex.: "Crítico: 6 (máximo) + 1d6 (3) = 9"
+// ---------- Dano: extras de habilidade e área ----------
+// Extra somado ao dano (ex.: Escondido +1d6, Ataque Poderoso +Força)
+export function addDamageExtra(result, { name, value, detail = null }) {
+  return recomputeDamage({ ...result, extras: [...(result.extras ?? []), { name, value, detail }] });
+}
+
+// Ataque em área (ex.: Expandir): alvos extras e metade do dano (arredonda para cima)
+export function withArea(result, { name, extraTargets, detail = null }) {
+  return recomputeDamage({ ...result, area: { name, extraTargets, detail } });
+}
+
+function recomputeDamage(result) {
+  const base = result.rolls.reduce((a, b) => a + b, 0) + result.modifier + result.bonus;
+  const full = base + (result.extras ?? []).reduce((sum, e) => sum + e.value, 0);
+  return { ...result, fullTotal: full, total: result.area ? Math.ceil(full / 2) : full };
+}
+
+// Texto do cálculo, ex.: "Crítico: 6 (máximo) + 1d6 (3) + Escondido 9 = 18"
 export function describeRoll(result) {
   const dice = `${result.count}d${result.sides} (${result.rolls.join(' + ')})`;
   const mod = result.modifier ? ` ${result.modifier > 0 ? '+' : '−'} ${Math.abs(result.modifier)}` : '';
   const base = result.critical ? `Crítico: ${result.bonus} (máximo) + ${dice}` : dice;
-  return `${base}${mod} = ${result.total}`;
+  const extras = (result.extras ?? []).map((e) => ` ${e.value >= 0 ? '+' : '−'} ${e.name} ${Math.abs(e.value)}`).join('');
+  if (result.area) {
+    return `${base}${mod}${extras} = ${result.fullTotal} → metade (${result.area.name}): ${result.total}`;
+  }
+  return `${base}${mod}${extras} = ${result.total}`;
 }
 
 // ---------- Dualidade: 2d12 (um de Esperança, um de Medo) + modificador ----------
@@ -91,5 +112,6 @@ export function describeDuality(result) {
     parts.push(`${result.edge.value > 0 ? ' +' : ' −'} ${name} ${Math.abs(result.edge.value)}${dice}`);
   }
   for (const e of result.experiences ?? []) parts.push(` + ${e.name} ${e.bonus}`);
+  for (const b of result.bonuses ?? []) parts.push(` ${b.value >= 0 ? '+' : '−'} ${b.name} ${Math.abs(b.value)}`);
   return `${parts.join('')} = ${result.total} (precisa de ${result.target})`;
 }

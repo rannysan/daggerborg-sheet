@@ -147,8 +147,9 @@ function openPanel({ title, label, variant = '', dice, before = null, after = nu
 }
 
 // title: ex. "Espada curta"; label: ex. "Dano d6"; result: de rollDice/rollCritical
+// Devolve { update(result, message?) } para recalcular (ex.: +1d6 de Escondido).
 export function showRoll({ title, label, result, message = null, actions = [] }) {
-  openPanel({
+  const panel = openPanel({
     title,
     label,
     variant: result.critical ? 'rolagem--critico' : '',
@@ -160,6 +161,12 @@ export function showRoll({ title, label, result, message = null, actions = [] })
     message,
     actions,
   });
+
+  return {
+    update(next, nextMessage) {
+      panel.update({ total: next.total, detail: describeRoll(next), message: nextMessage });
+    },
+  };
 }
 
 const dualityVariant = (result) => {
