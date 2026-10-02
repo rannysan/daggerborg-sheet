@@ -24,10 +24,14 @@
 
   function apply() {
     root.style.zoom = '';
+    root.style.removeProperty('--zoom');
     root.removeAttribute('data-zoom');
     var r = ratio();
     if (r > 1.15) {
-      root.style.zoom = String(Math.round(r * 100) / 100);
+      var zoom = String(Math.round(r * 100) / 100);
+      root.style.zoom = zoom;
+      // O zoom também multiplica alturas em vh/dvh; o CSS divide por --zoom
+      root.style.setProperty('--zoom', zoom);
       root.setAttribute('data-zoom', '');
     }
   }
