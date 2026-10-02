@@ -37,6 +37,7 @@ export class ProfilePage {
       h('div', { class: 'cabecalho-pagina' }, h('h1', {}, 'Perfil')),
       this.#auth.user ? this.#account() : this.#signInCard(),
       this.#appearance(),
+      this.#deviceInfo(),
       h('p', { class: 'campo__dica aviso-legal' },
         'A nuvem é protegida pelo reCAPTCHA do Google, que analisa o uso do site para barrar robôs. ',
         h('a', { href: 'https://policies.google.com/privacy', target: '_blank', rel: 'noopener noreferrer' }, 'Privacidade'),
@@ -117,6 +118,25 @@ export class ProfilePage {
         showToast('Você saiu da conta.');
       },
     });
+  }
+
+  // ---------- Diagnóstico: como o app enxerga este aparelho ----------
+  // Ajuda a entender problemas de layout (ex.: celular que informa largura de
+  // computador) e a confirmar qual versão está em uso.
+  #deviceInfo() {
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const line = h('p', { class: 'campo__dica aviso-legal' },
+      `Este aparelho: ${innerWidth}px de largura · ${touch ? 'toque' : 'mouse'} · ${installed ? 'app instalado' : 'navegador'}`);
+
+    // Versão = nome do cache do service worker (ex.: dagger-sheet-v34)
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        const version = keys.find((k) => k.startsWith('dagger-sheet-'));
+        if (version) line.append(` · ${version.replace('dagger-sheet-', 'versão ')}`);
+      }).catch(() => {});
+    }
+    return line;
   }
 
   // ---------- Aparência ----------

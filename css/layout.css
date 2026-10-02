@@ -2,7 +2,12 @@
  *
  * Celular: barra superior compacta (voltar + título) e navegação inferior fixa,
  *          como num app instalado.
- * Desktop (≥ 900px): marca + navegação no topo, sem barra inferior.
+ * Desktop: marca + navegação no topo, sem barra inferior.
+ *
+ * Quando é "desktop": tela larga (≥ 900px) E mouse (hover + pointer fine).
+ * Só a largura não basta: em vários Android a página informa ~950px de largura
+ * (alta resolução, "Tamanho da exibição", zoom do Chrome) e o celular caía no
+ * layout de desktop. Qualquer aparelho de toque fica com o layout de app.
  */
 
 /* ---------- Barra superior ---------- */
@@ -194,7 +199,7 @@ body.sem-nav .nav-inferior { display: none; }
 .grecaptcha-badge { visibility: hidden; }
 
 /* ---------- Desktop ---------- */
-@media (min-width: 900px) {
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
   :root { --altura-topo: 64px; }
 
   .barra-topo__interno { padding: 0 var(--espaco); gap: 24px; }

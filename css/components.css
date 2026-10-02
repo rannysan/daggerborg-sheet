@@ -74,7 +74,7 @@
 }
 .avatar-conta:hover { filter: brightness(1.1); }
 
-@media (max-width: 899px) {
+@media not all and (min-width: 900px) and (hover: hover) and (pointer: fine) {
   .so-desktop { display: none; }
   /* No celular, Instalar e Entrar viram botões redondos só com ícone */
   .botao--instalar,
@@ -236,7 +236,7 @@ body.sem-nav .toast { bottom: calc(var(--altura-barra-inferior) + 16px + env(saf
 .dialogo__acoes { justify-content: flex-end; margin-top: 4px; }
 .dialogo__extra { margin-right: auto; }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (pointer: coarse) {
   .dialogo {
     width: 100%;
     max-width: 100%;
@@ -772,7 +772,7 @@ body.sem-nav .toast { bottom: calc(var(--altura-barra-inferior) + 16px + env(saf
   animation: rolagem-entra 0.2s ease-out;
 }
 /* No celular fica acima da navegação inferior, ocupando a largura */
-@media (max-width: 899px) {
+@media not all and (min-width: 900px) and (hover: hover) and (pointer: fine) {
   .rolagem {
     left: var(--espaco);
     right: var(--espaco);
@@ -851,7 +851,7 @@ body.sem-nav .toast { bottom: calc(var(--altura-barra-inferior) + 16px + env(saf
 /* ============================================================
    Desktop (≥ 900px)
    ============================================================ */
-@media (min-width: 900px) {
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
   /* Ficha: sem abas; as quatro seções lado a lado */
   .abas-ficha { display: none; }
   /* Seções da mesma linha com a mesma altura */
