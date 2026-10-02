@@ -123,6 +123,14 @@ img { max-width: 100%; }
 
 [hidden] { display: none !important; }
 
+/* Toque (celular/tablet): leitura confortável à distância do braço.
+   Corpo em 16px (recomendação de Material/Apple para texto principal) e tudo
+   em rem cresce junto, levando os rótulos pequenos a ~12px no mínimo. */
+@media (pointer: coarse) {
+  html { font-size: 17px; }
+  body { font-size: 16px; line-height: 1.5; }
+}
+
 :focus-visible {
   outline: 2px solid var(--cor-principal);
   outline-offset: 2px;

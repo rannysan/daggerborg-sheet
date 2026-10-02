@@ -168,7 +168,7 @@ body.sem-nav .nav-inferior { display: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   min-height: var(--altura-barra-inferior);
   padding: 12px var(--espaco);
   padding-bottom: max(12px, env(safe-area-inset-bottom));
@@ -177,17 +177,20 @@ body.sem-nav .nav-inferior { display: none; }
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--borda);
 }
-.barra-inferior__etapa { text-align: center; font-size: 0.8rem; color: var(--texto-suave); }
-.barra-inferior__etapa strong { display: block; color: var(--texto); font-size: 0.95rem; }
+.barra-inferior .botao { flex: 0 0 auto; white-space: nowrap; padding-inline: 16px; }
+.barra-inferior__etapa { flex: 1; min-width: 0; text-align: center; font-size: 0.8rem; color: var(--texto-suave); white-space: nowrap; }
+.barra-inferior__etapa strong { display: block; color: var(--texto); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- Grades de formulário ---------- */
 .grade-formulario {
   display: grid;
   gap: var(--espaco);
 }
+/* data-zoom: celular com escala corrigida (js/viewport-boot.js) — a largura
+   informada não é a útil, então fica em uma coluna */
 @media (min-width: 640px) {
-  .grade-formulario { grid-template-columns: 1fr 1fr; }
-  .grade-formulario .ocupa-tudo { grid-column: 1 / -1; }
+  :root:not([data-zoom]) .grade-formulario { grid-template-columns: 1fr 1fr; }
+  :root:not([data-zoom]) .grade-formulario .ocupa-tudo { grid-column: 1 / -1; }
 }
 
 /* ---------- Rodapé (aviso do reCAPTCHA) ---------- */
