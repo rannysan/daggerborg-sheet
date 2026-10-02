@@ -1,44 +1,102 @@
-/* Layout: estrutura das telas (mobile-first) */
-.topo {
+/* Layout: casca do app e estrutura das telas (mobile-first).
+ *
+ * Celular: barra superior compacta (voltar + título) e navegação inferior fixa,
+ *          como num app instalado.
+ * Desktop (≥ 900px): marca + navegação no topo, sem barra inferior.
+ */
+
+/* ---------- Barra superior ---------- */
+.barra-topo {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
+  padding-top: env(safe-area-inset-top); /* "notch" do app instalado */
+  background: color-mix(in srgb, var(--fundo) 85%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--borda);
+}
+.barra-topo__interno {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px var(--espaco);
-  /* respeita o "notch" quando instalado no celular */
-  padding-top: max(12px, env(safe-area-inset-top));
-  background: var(--cor-principal);
-  color: #fff;
+  gap: 8px;
+  max-width: var(--largura-max);
+  min-height: var(--altura-topo);
+  margin: 0 auto;
+  padding: 0 12px;
 }
 
-.topo__marca {
-  color: #fff;
+.marca {
+  font-family: var(--fonte-titulo);
   font-weight: 700;
   font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: var(--texto);
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.topo__acoes { display: flex; align-items: center; gap: 8px; }
+/* Título da tela (só no celular, em telas internas) */
+.barra-topo__titulo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+/* Com título, o celular mostra o título no lugar da marca */
+body.com-titulo .marca { display: none; }
+body:not(.com-titulo) .barra-topo__titulo { display: none; }
+body:not(.com-titulo) .marca { flex: 1; padding-left: 4px; }
 
+.barra-topo__acoes { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* Botão só com ícone (voltar, fechar...) — alvo de toque de 44px */
+.botao-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+.botao-icone:hover { background: var(--superficie-2); }
+
+/* Navegação no topo: só no desktop */
+.nav-topo { display: none; }
+
+/* ---------- Conteúdo ---------- */
 .conteudo {
   flex: 1;
   width: 100%;
   max-width: var(--largura-max);
   margin: 0 auto;
   padding: var(--espaco);
+  /* espaço para a navegação inferior fixa */
+  padding-bottom: calc(var(--altura-nav) + var(--espaco) + env(safe-area-inset-bottom));
 }
+body.sem-nav .conteudo { padding-bottom: var(--espaco); }
 
 /* Cada página é desenhada dentro de um .pagina (criado pelo router) */
 .pagina {
   display: grid;
   gap: var(--espaco);
   align-content: start;
+  animation: pagina-entra 0.2s ease-out;
+}
+@keyframes pagina-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 
-/* Página com barra inferior fixa (wizard): reserva espaço para ela */
+/* Página com barra de ações fixa (wizard): reserva espaço para ela */
 .pagina--com-barra {
   padding-bottom: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom));
 }
@@ -50,15 +108,58 @@
   justify-content: space-between;
   gap: 12px;
 }
-.cabecalho-pagina h1 { margin: 0; font-size: 1.4rem; }
+.cabecalho-pagina h1 { margin: 0; }
 
-/* Barra inferior fixa: Voltar / etapa / Continuar */
+/* ---------- Navegação inferior (celular) ---------- */
+.nav-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: calc(var(--altura-nav) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-top: 1px solid var(--borda);
+}
+body.sem-nav .nav-inferior { display: none; }
+
+.nav-inferior__item {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-inferior__item .icone {
+  width: 24px;
+  height: 24px;
+  padding: 3px 14px;
+  box-sizing: content-box;
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+.nav-inferior__item[aria-current="page"] { color: var(--texto); }
+.nav-inferior__item[aria-current="page"] .icone {
+  background: var(--cor-principal-suave);
+  color: var(--cor-principal);
+}
+
+/* ---------- Barra de ações fixa (wizard): Voltar / etapa / Continuar ---------- */
 .barra-inferior {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -66,64 +167,68 @@
   min-height: var(--altura-barra-inferior);
   padding: 12px var(--espaco);
   padding-bottom: max(12px, env(safe-area-inset-bottom));
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--borda);
 }
-.barra-inferior__etapa { text-align: center; font-size: 0.85rem; color: var(--texto-suave); }
-.barra-inferior__etapa strong { display: block; color: var(--texto); font-size: 1rem; }
+.barra-inferior__etapa { text-align: center; font-size: 0.8rem; color: var(--texto-suave); }
+.barra-inferior__etapa strong { display: block; color: var(--texto); font-size: 0.95rem; }
 
+/* ---------- Grades de formulário ---------- */
 .grade-formulario {
   display: grid;
   gap: var(--espaco);
 }
-
 @media (min-width: 640px) {
   .grade-formulario { grid-template-columns: 1fr 1fr; }
   .grade-formulario .ocupa-tudo { grid-column: 1 / -1; }
 }
 
-/* Ficha de jogo: empilhada no celular, duas colunas no desktop (como a ficha em papel) */
-.ficha-grade,
-.coluna {
-  display: grid;
-  gap: var(--espaco);
-  align-content: start;
-}
-
-@media (min-width: 720px) {
-  .ficha-grade { grid-template-columns: minmax(220px, 1fr) 2fr; }
-  .ficha-grade .stats { grid-template-columns: 1fr; }
-}
-
-/* ---------- Abas do cabeçalho (Fichas | Campanhas) ---------- */
-.topo { flex-wrap: wrap; }
-.abas { display: flex; gap: 4px; }
-.abas__item {
-  padding: 6px 12px;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-.abas__item[aria-current="page"] { background: rgba(255, 255, 255, 0.2); color: #fff; }
-/* No celular as abas descem para uma linha própria, ocupando a largura toda */
-@media (max-width: 560px) {
-  .abas { order: 3; width: 100%; }
-  .abas__item { flex: 1; text-align: center; }
-}
-
 /* ---------- Rodapé (aviso do reCAPTCHA) ---------- */
-.rodape {
-  padding: 8px var(--espaco) max(12px, env(safe-area-inset-bottom));
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--texto-suave);
-}
-.rodape a { color: inherit; }
-/* No wizard, a barra inferior fixa cobriria o rodapé */
-body:has(.pagina--com-barra) .rodape { padding-bottom: calc(var(--altura-barra-inferior) + 12px + env(safe-area-inset-bottom)); }
+/* No celular o aviso fica na tela de Perfil; o rodapé aparece só no desktop */
+.rodape { display: none; }
 
 /* Selo flutuante do reCAPTCHA: escondido (ficaria sobre o popup de dados).
-   O aviso equivalente está no rodapé e no perfil, como o Google permite. */
+   O aviso equivalente está no rodapé (desktop) e no Perfil, como o Google permite. */
 .grecaptcha-badge { visibility: hidden; }
+
+/* ---------- Desktop ---------- */
+@media (min-width: 900px) {
+  :root { --altura-topo: 64px; }
+
+  .barra-topo__interno { padding: 0 var(--espaco); gap: 24px; }
+  /* No desktop: sempre a marca, nunca o botão voltar nem o título da tela */
+  body.com-titulo .marca { display: inline; }
+  .barra-topo__titulo, .barra-topo__voltar { display: none !important; }
+  body:not(.com-titulo) .marca { flex: 0 0 auto; }
+
+  .nav-topo { display: flex; gap: 4px; }
+  .nav-topo__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: var(--texto-suave);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+  .nav-topo__item:hover { color: var(--texto); background: var(--superficie-2); }
+  .nav-topo__item[aria-current="page"] { color: var(--cor-principal); background: var(--cor-principal-suave); }
+
+  .nav-inferior { display: none; }
+  .conteudo { padding: 24px var(--espaco); }
+  body.sem-nav .conteudo { padding-bottom: 24px; }
+
+  .rodape {
+    display: block;
+    padding: 8px var(--espaco) max(12px, env(safe-area-inset-bottom));
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+  }
+  .rodape a { color: inherit; }
+  body:has(.pagina--com-barra) .rodape { padding-bottom: calc(var(--altura-barra-inferior) + 12px); }
+}

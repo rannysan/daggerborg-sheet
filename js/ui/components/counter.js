@@ -8,6 +8,7 @@ import { clamp } from '../../domain/rules.js';
 
 export function counter({
   label,
+  labelIcon = null, // elemento opcional antes do rótulo (ex.: ícone do Estresse)
   hint,
   value,
   min = 0,
@@ -43,7 +44,7 @@ export function counter({
 
   refresh();
   const element = h('div', { class: 'contador' },
-    h('span', { class: 'contador__rotulo' }, label),
+    h('span', { class: 'contador__rotulo' }, labelIcon, label),
     hint ? h('span', { class: 'contador__dica' }, hint) : null,
     h('div', { class: 'contador__controles' }, minus, valueEl, plus),
   );
@@ -51,10 +52,11 @@ export function counter({
 }
 
 // Atalho para recursos { current, max }: mostra "atual / máximo"
-export function poolCounter({ label, pool, onChange, readOnly = false }) {
+export function poolCounter({ label, labelIcon = null, pool, onChange, readOnly = false }) {
   const max = Number.isInteger(pool.max) ? pool.max : pool.current;
   return counter({
     label,
+    labelIcon,
     value: pool.current,
     max,
     format: (v) => `${v} / ${max}`,

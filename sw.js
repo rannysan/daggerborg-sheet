@@ -1,7 +1,7 @@
 // Service worker: roda em segundo plano e intercepta as requisições do site.
 // IMPORTANTE: sempre que mudar arquivos do site, aumente a versão abaixo
 // para o navegador baixar tudo de novo.
-const CACHE = 'dagger-sheet-v27';
+const CACHE = 'dagger-sheet-v32';
 
 // Arquivos guardados na instalação (o "esqueleto" do app para funcionar offline).
 // Ao criar um arquivo .js/.css/.json novo, adicione aqui também.
@@ -13,17 +13,21 @@ const ARQUIVOS = [
   './css/base.css',
   './css/layout.css',
   './css/components.css',
+  './fonts/inter-latin.woff2',
+  './fonts/cinzel-latin.woff2',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './data/classes.json',
   './data/equipment.json',
   './js/main.js',
+  './js/theme-boot.js',
   './js/core/router.js',
   './js/core/store.js',
   './js/core/utils.js',
   './js/domain/campaign.js',
   './js/domain/character.js',
+  './js/domain/classActions.js',
   './js/domain/classes.js',
   './js/domain/dice.js',
   './js/domain/duality.js',
@@ -54,13 +58,17 @@ const ARQUIVOS = [
   './js/services/EditSession.js',
   './js/services/ProfileService.js',
   './js/ui/dom.js',
-  './js/ui/components/accountButton.js',
+  './js/ui/icons.js',
+  './js/ui/shell.js',
+  './js/ui/signIn.js',
+  './js/ui/theme.js',
   './js/ui/components/campaignDialog.js',
   './js/ui/components/classAbilities.js',
   './js/ui/components/counter.js',
   './js/ui/components/dialog.js',
   './js/ui/components/emptyState.js',
   './js/ui/components/fields.js',
+  './js/ui/components/headerAccount.js',
   './js/ui/components/pipTrack.js',
   './js/ui/components/portrait.js',
   './js/ui/components/rollPopup.js',
@@ -69,6 +77,7 @@ const ARQUIVOS = [
   './js/ui/pages/CampaignPage.js',
   './js/ui/pages/CharacterListPage.js',
   './js/ui/pages/InvitePage.js',
+  './js/ui/pages/ProfilePage.js',
   './js/ui/pages/SheetPage.js',
   './js/ui/pages/WizardPage.js',
   './js/ui/steps/index.js',

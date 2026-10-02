@@ -1,21 +1,31 @@
 // Lista as habilidades de classe e a passiva, com os ícones de custo
 import { h } from '../dom.js';
+import { icon } from '../icons.js';
 import { COSTS } from '../../domain/rules.js';
 
-// ['hope', 'hope', 'stress'] → "⭐⭐ 💧" (leitor de tela: "2 Esperança, 1 Estresse")
+// Ícone SVG de cada custo (a cor vem do CSS: .custo--hope etc.)
+const COST_ICONS = { hope: 'star', stress: 'droplet', action: 'zap' };
+
+// Ícone de um custo com a cor dele (também usado nos rótulos de Esperança e Estresse da ficha)
+export const costIcon = (id) => (COST_ICONS[id]
+  ? icon(COST_ICONS[id], { className: `custo__icone custo--${id}` })
+  : h('span', {}, COSTS[id]?.icon ?? id));
+
+// ['hope', 'hope', 'stress'] → ★★ 💧 (leitor de tela: "2 Esperança, 1 Estresse")
 export function costIcons(cost) {
   const counts = new Map();
   cost.forEach((c) => counts.set(c, (counts.get(c) ?? 0) + 1));
 
   const label = [...counts].map(([c, n]) => `${n} ${COSTS[c]?.label ?? c}`).join(', ');
-  const icons = [...counts].map(([c, n]) => (COSTS[c]?.icon ?? c).repeat(n)).join(' ');
-
-  return h('span', { class: 'custo', role: 'img', 'aria-label': label, title: label }, icons);
+  return h('span', { class: 'custo', role: 'img', 'aria-label': label, title: label },
+    [...counts].map(([c, n]) => Array.from({ length: n }, () => costIcon(c))),
+  );
 }
 
 export function costLegend() {
   return h('p', { class: 'legenda' },
-    Object.values(COSTS).map((c) => `${c.icon} ${c.label}`).join('  ·  '));
+    Object.entries(COSTS).map(([id, c]) => h('span', { class: 'legenda__item' }, costIcon(id), c.label)),
+  );
 }
 
 function abilityLine(ability) {

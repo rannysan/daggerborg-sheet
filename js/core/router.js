@@ -16,20 +16,32 @@ export class Router {
   #current = null; // { route, page }
   #currentPath = null;
   #leaving = false; // um beforeLeave (ex.: diálogo) está esperando resposta
+  #listeners = new Set();
 
   constructor(container) {
     this.#container = container;
   }
 
   // pattern: '/ficha/:id' — factory: () => página
-  add(pattern, factory) {
+  // meta: dados da rota para a casca do app (ex.: { title, tab, back, hideNav })
+  add(pattern, factory, meta = {}) {
     const keys = [];
     const source = pattern.replace(/:(\w+)/g, (_, key) => {
       keys.push(key);
       return '([^/]+)';
     });
-    this.#routes.push({ regex: new RegExp(`^${source}$`), keys, factory });
+    this.#routes.push({ regex: new RegExp(`^${source}$`), keys, factory, meta });
     return this;
+  }
+
+  // Avisa a cada troca de tela: listener(meta, params, path)
+  onChange(listener) {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
+  }
+
+  #emit(route, params, path) {
+    this.#listeners.forEach((listener) => listener(route.meta, params, path));
   }
 
   start() {
@@ -80,6 +92,7 @@ export class Router {
     // Mesma rota: deixa a página atual tratar, se ela souber (evita recarregar)
     if (this.#current?.route === match.route && this.#current.page.update?.(match.params)) {
       this.#currentPath = path;
+      this.#emit(match.route, match.params, path);
       return;
     }
 
@@ -114,6 +127,7 @@ export class Router {
     const page = match.route.factory();
     this.#current = { route: match.route, page };
     this.#currentPath = path;
+    this.#emit(match.route, match.params, path); // antes do mount: a página pode ajustar a casca
 
     // Página que demora (ex.: esperando a nuvem): mostra "Carregando…" em vez de
     // tela em branco. Só aparece depois de um instante, para não piscar.
