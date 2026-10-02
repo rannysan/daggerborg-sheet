@@ -1,7 +1,7 @@
 // Service worker: roda em segundo plano e intercepta as requisições do site.
 // IMPORTANTE: sempre que mudar arquivos do site, aumente a versão abaixo
 // para o navegador baixar tudo de novo.
-const CACHE = 'dagger-sheet-v32';
+const CACHE = 'dagger-sheet-v33';
 
 // Arquivos guardados na instalação (o "esqueleto" do app para funcionar offline).
 // Ao criar um arquivo .js/.css/.json novo, adicione aqui também.
@@ -136,7 +136,11 @@ self.addEventListener('fetch', (event) => {
 // Código do app: tenta a rede primeiro; se falhar (offline), usa o cache
 async function networkFirst(request) {
   try {
-    const resposta = await fetch(request);
+    // cache: 'no-cache' confere com o servidor se o arquivo mudou (304 se não).
+    // Sem isso, o cache HTTP do GitHub Pages (max-age=600) podia entregar
+    // arquivos antigos por até 10 min após publicar — e o app guardava uma
+    // mistura de versões (ex.: HTML novo com CSS antigo).
+    const resposta = await fetch(request, { cache: 'no-cache' });
     if (resposta.ok) {
       const cache = await caches.open(CACHE);
       cache.put(request, resposta.clone());
